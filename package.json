@@ -1,7 +1,7 @@
 {
   "name": "codesync",
   "main": "./lib/codesync",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Sync your code changes as you make them",
   "keywords": [],
   "repository": "https://github.com/codesyncapp/codesync-atom",
