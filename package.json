@@ -1,10 +1,13 @@
 {
   "name": "codesync",
   "main": "./lib/codesync",
-  "version": "1.1.0",
+  "version": "0.0.0",
   "description": "Sync your code changes as you make them",
   "keywords": [],
-  "repository": "https://github.com/codesyncapp/codesync-atom",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codesyncapp/codesync-atom"
+  },
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0",
