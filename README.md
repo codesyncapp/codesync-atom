@@ -1,5 +1,5 @@
-# codesync-atom package
+# CodeSync
 
-A short description of your package.
+- Syncs your real time code changes as you make them. 
 
-![A screenshot of your package](https://f.cloud.github.com/assets/69169/2290250/c35d867a-a017-11e3-86be-cd7c5bf3ff9b.gif)
+- Sign up at https://www.codesync.com and follow the steps mentioned there to make this extension work
