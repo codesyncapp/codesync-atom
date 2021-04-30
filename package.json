@@ -3,6 +3,7 @@
   "main": "./lib/codesync",
   "version": "1.2.0",
   "description": "Sync your code changes as you make them",
+  "icon": "https://codesync-images.s3.amazonaws.com/icon.png",
   "keywords": [],
   "repository": {
     "type": "git",
