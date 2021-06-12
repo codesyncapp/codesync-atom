@@ -20,7 +20,11 @@
     "dateformat": "^4.4.1",
     "diff-match-patch": "^1.0.5",
     "ignore": "^5.1.8",
+    "isbinaryfile": "^4.0.8",
     "js-yaml": "^3.14.1",
-    "untildify": "^4.0.0"
+    "node-fetch": "^2.6.1",
+    "untildify": "^4.0.0",
+    "walk": "^2.3.14",
+    "websocket": "^1.0.34"
   }
 }
