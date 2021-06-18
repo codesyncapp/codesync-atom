@@ -1,7 +1,7 @@
 {
   "name": "codesync",
   "main": "./lib/codesync",
-  "version": "1.6.0",
+  "version": "2.2.0",
   "description": "Sync your code changes as you make them",
   "icon": "https://codesync-images.s3.amazonaws.com/icon.png",
   "keywords": [],
@@ -16,11 +16,17 @@
     "node": "15.13.0"
   },
   "dependencies": {
+    "aws-sdk": "^2.927.0",
     "current-git-branch": "^1.1.0",
     "dateformat": "^4.4.1",
     "diff-match-patch": "^1.0.5",
     "ignore": "^5.1.8",
+    "isbinaryfile": "^4.0.8",
     "js-yaml": "^3.14.1",
-    "untildify": "^4.0.0"
+    "lodash": "^4.17.21",
+    "node-fetch": "^2.6.1",
+    "untildify": "^4.0.0",
+    "walk": "^2.3.14",
+    "websocket": "^1.0.34"
   }
 }
