@@ -2,7 +2,7 @@
   "name": "codesync",
   "main": "./lib/codesync",
   "version": "2.5.0",
-  "description": "Sync your code changes as you make them",
+  "description": "Stream all code changes to the cloud, in real-time. Never lose code again - no commits needed.",
   "icon": "https://codesync-images.s3.amazonaws.com/icon.png",
   "keywords": [],
   "repository": {
