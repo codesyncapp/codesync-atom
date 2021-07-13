@@ -1,5 +1,12 @@
 {
   "name": "codesync",
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
+  },
   "main": "./lib/codesync",
   "version": "2.5.0",
   "description": "Stream all code changes to the cloud, in real-time. Never lose code again - no commits needed.",
