@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Init Flow
+- Init Flow, Should be able to connect a repo with CodeSync
+- Button with icon added in status bar
+- Views added in right panel for sign up, Connect a repo and Unsync a repo
 
 ### Changed
 - Updated README
