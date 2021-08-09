@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Updated status bar msg if repo is not connected. Clicking on it triggers Init process
 - Applied limit on retry putLogEvent
+### Fixed
+- Fixed duplicate auth-server run
 
 ## [2.15.0] - 2021-08-07
 ### Added
