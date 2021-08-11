@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Updated status bar msg if repo is not connected. Clicking on it triggers Init process
 - Applied limit on retry putLogEvent
+- Non-IDE events i.e. file create/updated/deleted are now part of daemon
+
 ### Fixed
 - Fixed duplicate auth-server run
 
