@@ -1,9 +1,8 @@
 import fs from "fs";
 import yaml from "js-yaml";
-import vscode from "vscode";
 import untildify from "untildify";
 
-import {randomBaseRepoPath, randomRepoPath} from "../../helpers/helpers";
+import {buildAtomEnv, randomBaseRepoPath, randomRepoPath} from "../../helpers/helpers";
 import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../../lib/utils/setup_utils";
 import {NOTIFICATION} from "../../../lib/constants";
 
@@ -45,6 +44,7 @@ describe("setupCodeSync",  () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        buildAtomEnv();
         untildify.mockReturnValue(baseRepoPath);
         fs.mkdirSync(baseRepoPath, {recursive: true});
         fs.mkdirSync(repoPath, {recursive: true});
@@ -66,10 +66,13 @@ describe("setupCodeSync",  () => {
         expect(lsResult.includes("sequence_token.yml")).toBe(true);
         // should return port number
         expect(port).toBeTruthy();
-        expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showInformationMessage.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
-        expect(vscode.window.showInformationMessage.mock.calls[0][1]).toBe(NOTIFICATION.JOIN);
-        expect(vscode.window.showInformationMessage.mock.calls[0][2]).toBe(NOTIFICATION.IGNORE);
+        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
+        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(1);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.JOIN);
+        expect(options.dismissable).toBe(true);
+
     });
 
     test('with empty user.yml', async () => {
@@ -77,10 +80,12 @@ describe("setupCodeSync",  () => {
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
-        expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showInformationMessage.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
-        expect(vscode.window.showInformationMessage.mock.calls[0][1]).toBe(NOTIFICATION.JOIN);
-        expect(vscode.window.showInformationMessage.mock.calls[0][2]).toBe(NOTIFICATION.IGNORE);
+        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
+        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(1);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.JOIN);
+        expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
     });
 
@@ -89,10 +94,13 @@ describe("setupCodeSync",  () => {
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
-        expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showInformationMessage.mock.calls[0][0]).toBe(NOTIFICATION.CONNECT_REPO);
-        expect(vscode.window.showInformationMessage.mock.calls[0][1]).toBe(NOTIFICATION.CONNECT);
-        expect(vscode.window.showInformationMessage.mock.calls[0][2]).toBe(NOTIFICATION.IGNORE);
+        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.CONNECT_REPO);
+        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.CONNECT);
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
+        expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
     });
 
@@ -102,14 +110,19 @@ describe("setupCodeSync",  () => {
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeFalsy();
-        expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showInformationMessage.mock.calls[0][0]).toBe(NOTIFICATION.REPO_IN_SYNC);
-        expect(vscode.window.showInformationMessage.mock.calls[0][1]).toBe(NOTIFICATION.TRACK_IT);
-        expect(vscode.window.showInformationMessage.mock.calls[0][2]).toBe(NOTIFICATION.UNSYNC_REPO);
+        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.REPO_IN_SYNC);
+        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.UNSYNC_REPO);
+        expect(options.dismissable).toBe(true);
+
         fs.rmSync(userFilePath);
     });
 
     test('showConnectRepoView',  async () => {
+        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
         fs.writeFileSync(configPath, yaml.safeDump({repos: {}}));
         const shouldShowConnectRepoView = showConnectRepoView(repoPath);
         expect(shouldShowConnectRepoView).toBe(true);

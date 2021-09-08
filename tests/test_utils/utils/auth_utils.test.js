@@ -94,6 +94,9 @@ describe("createUser",  () => {
         await createUser("TOKEN", idToken, repoPath);
         expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
         expect(global.atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.LOGIN_FAILED);
+        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(options).toBeFalsy();
+
     });
 
     test("with valid token and user not in user.yml", async () => {
@@ -120,6 +123,12 @@ describe("createUser",  () => {
         expect(TEST_EMAIL in users).toBe(true);
         expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CONNECT_AFTER_JOIN);
+        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.CONNECT);
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
+        expect(options.dismissable).toBe(true);
+
     });
 
     test("with no repoPath", async () => {
@@ -135,6 +144,9 @@ describe("createUser",  () => {
         expect(TEST_EMAIL in users).toBe(true);
         expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.AUTHENTICATED_WITH_NO_REPO_OPENED);
+        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toBeFalsy();
+        expect(options.dismissable).toBe(true);
     });
 });
 
@@ -148,5 +160,9 @@ describe("askAndTriggerSignUp",  () => {
         askAndTriggerSignUp();
         expect(global.atom.notifications.addWarning).toHaveBeenCalledTimes(1);
         expect(global.atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.AUTHENTICATION_FAILED);
+        const options = global.atom.notifications.addWarning.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(1);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.LOGIN);
+        expect(options.dismissable).toBe(true);
     });
 });
