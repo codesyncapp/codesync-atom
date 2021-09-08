@@ -1,10 +1,9 @@
 import fs from "fs";
-import vscode from "vscode";
-import {NOTIFICATION} from "../../../lib/constants";
-import {randomBaseRepoPath, randomRepoPath, TEST_EMAIL} from "../../helpers/helpers";
 import yaml from "js-yaml";
-import {askPublicPrivate, askToUpdateSyncIgnore, showChooseAccount} from "../../../lib/utils/notifications";
 import untildify from "untildify";
+import {NOTIFICATION} from "../../../lib/constants";
+import {buildAtomEnv, randomBaseRepoPath, randomRepoPath, TEST_EMAIL} from "../../helpers/helpers";
+import {askPublicPrivate, askToUpdateSyncIgnore, showChooseAccount} from "../../../lib/utils/notifications";
 
 
 describe("showChooseAccount",  () => {
@@ -16,6 +15,7 @@ describe("showChooseAccount",  () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        buildAtomEnv();
         untildify.mockReturnValue(baseRepoPath);
         fs.mkdirSync(baseRepoPath, {recursive: true});
         fs.mkdirSync(repoPath, {recursive: true});
@@ -30,16 +30,14 @@ describe("showChooseAccount",  () => {
     test("with no user",  () => {
         fs.writeFileSync(userFilePath, yaml.safeDump({}));
         showChooseAccount(repoPath);
-        expect(vscode.window.showErrorMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showErrorMessage.mock.calls[0][0]).toStrictEqual(NOTIFICATION.NO_VALID_ACCOUNT);
+        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.NO_VALID_ACCOUNT);
     });
 
     test("with valid user",  () => {
         showChooseAccount(repoPath);
-        expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showInformationMessage.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);
-        expect(vscode.window.showInformationMessage.mock.calls[0][1]).toStrictEqual(TEST_EMAIL);
-        expect(vscode.window.showInformationMessage.mock.calls[0][2]).toStrictEqual(NOTIFICATION.USE_DIFFERENT_ACCOUNT);
+        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);
     });
 
 });
@@ -51,25 +49,7 @@ describe("askPublicPrivate",  () => {
 
     test("askPublicPrivate",  async () => {
         await askPublicPrivate();
-        expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showInformationMessage.mock.calls[0][0]).toStrictEqual(NOTIFICATION.PUBLIC_OR_PRIVATE);
-        expect(vscode.window.showInformationMessage.mock.calls[0][1]).toStrictEqual({ modal: true });
-        expect(vscode.window.showInformationMessage.mock.calls[0][2]).toStrictEqual(NOTIFICATION.YES);
-        expect(vscode.window.showInformationMessage.mock.calls[0][3]).toStrictEqual(NOTIFICATION.NO);
-    });
-});
-
-
-describe("askToUpdateSyncIgnore",  () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    test("askToUpdateSyncIgnore",  async () => {
-        const selection = await askToUpdateSyncIgnore();
-        expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showInformationMessage.mock.calls[0][0]).toStrictEqual(NOTIFICATION.UPDATE_SYNCIGNORE);
-        expect(vscode.window.showInformationMessage.mock.calls[0][1]).toStrictEqual(NOTIFICATION.OK);
-        expect(vscode.window.showInformationMessage.mock.calls[0][2]).toStrictEqual(NOTIFICATION.CANCEL);
+        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.PUBLIC_OR_PRIVATE);
     });
 });
