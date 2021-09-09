@@ -14,7 +14,7 @@ describe("handleDirectoryDeleteDiffs", () => {
     const baseRepo = randomBaseRepoPath();
     const shadowRepoPath = path.join(baseRepo, ".shadow");
     const cacheRepoPath = path.join(baseRepo, ".deleted");
-    const diffsRepo = path.join(baseRepo, ".diffs/.vscode");
+    const diffsRepo = path.join(baseRepo, ".diffs/.atom");
     const shadowRepoBranchPath = path.join(shadowRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
     const cacheRepoBranchPath = path.join(cacheRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
 

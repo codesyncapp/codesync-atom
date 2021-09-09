@@ -13,7 +13,7 @@ describe("manageDiff", () => {
 
     const repoPath = randomRepoPath();
     const baseRepo = randomBaseRepoPath();
-    const diffsRepo = path.join(baseRepo, ".diffs/.vscode");
+    const diffsRepo = path.join(baseRepo, ".diffs/.atom");
     const newFilePath = `${repoPath}/new.js`;
 
     beforeEach(() => {

@@ -13,7 +13,7 @@ describe("handleNewFile",  () => {
     const baseRepo = randomBaseRepoPath();
     const shadowRepoPath = path.join(baseRepo, ".shadow");
     const originalsRepoPath = path.join(baseRepo, ".originals");
-    const diffsRepo = path.join(baseRepo, ".diffs/.vscode");
+    const diffsRepo = path.join(baseRepo, ".diffs/.atom");
     const shadowRepoBranchPath = path.join(shadowRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
     const originalsRepoBranchPath = path.join(originalsRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
 

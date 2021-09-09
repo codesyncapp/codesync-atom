@@ -13,7 +13,7 @@ describe("handleRename",  () => {
 
     const baseRepo = randomBaseRepoPath();
     const shadowRepoPath = path.join(baseRepo, ".shadow");
-    const diffsRepo = path.join(baseRepo, ".diffs/.vscode");
+    const diffsRepo = path.join(baseRepo, ".diffs/.atom");
     const shadowRepoBranchPath = path.join(shadowRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
 
     // For file rename
