@@ -1,6 +1,5 @@
 import fs from "fs";
 import yaml from "js-yaml";
-import vscode from "vscode";
 import getBranchName from 'current-git-branch';
 import {initUtils} from "../../../lib/init/utils";
 import untildify from 'untildify';
@@ -14,7 +13,7 @@ import {
     TEST_USER,
     USER_PLAN,
     randomBaseRepoPath,
-    randomRepoPath
+    randomRepoPath, buildAtomEnv
 } from "../../helpers/helpers";
 import {DEFAULT_BRANCH, NOTIFICATION, SYNCIGNORE} from "../../../lib/constants";
 import {readYML} from "../../../lib/utils/common";
@@ -27,20 +26,23 @@ describe("isValidRepoSize",  () => {
     const initUtilsObj = new initUtils();
 
     beforeEach(() => {
+        buildAtomEnv();
         jest.clearAllMocks();
     });
 
     test("true result",  () => {
         const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE-10, USER_PLAN);
         expect(isValid).toBe(true);
-        expect(vscode.window.showErrorMessage).toHaveBeenCalledTimes(0);
+        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(0);
     });
 
     test("false result",  () => {
         const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE+10, USER_PLAN);
         expect(isValid).toBe(false);
-        expect(vscode.window.showErrorMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showErrorMessage.mock.calls[0][0].startsWith(NOTIFICATION.REPOS_LIMIT_BREACHED)).toBe(true);
+        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addError.mock.calls[0][0].startsWith(NOTIFICATION.REPOS_LIMIT_BREACHED)).toBe(true);
+        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(options).toBeFalsy();
     });
 });
 
@@ -55,14 +57,16 @@ describe("isValidFilesCount",  () => {
     test("true result",  () => {
         const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT-10, USER_PLAN);
         expect(isValid).toBe(true);
-        expect(vscode.window.showErrorMessage).toHaveBeenCalledTimes(0);
+        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(0);
     });
 
     test("false result",  () => {
         const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT+10, USER_PLAN);
         expect(isValid).toBe(false);
-        expect(vscode.window.showErrorMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showErrorMessage.mock.calls[0][0].startsWith(NOTIFICATION.FILES_LIMIT_BREACHED)).toBe(true);
+        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addError.mock.calls[0][0].startsWith(NOTIFICATION.FILES_LIMIT_BREACHED)).toBe(true);
+        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(options).toBeFalsy();
     });
 });
 
@@ -434,8 +438,9 @@ describe("uploadRepo",  () => {
         const users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(false);
         // Verify error msg
-        expect(vscode.window.showErrorMessage).toHaveBeenCalledTimes(1);
-        expect(vscode.window.showErrorMessage.mock.calls[0][0]).toStrictEqual(NOTIFICATION.SYNC_FAILED);
-
+        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(global.atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.SYNC_FAILED);
+        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(options).toBeFalsy();
     });
 });
