@@ -7,7 +7,8 @@ import untildify from "untildify";
 import { isBinaryFileSync } from 'isbinaryfile';
 
 import {
-    cleanUpDeleteDiff, getDIffForDeletedFile,
+    cleanUpDeleteDiff,
+    getDIffForDeletedFile,
     handleFilesRename,
     handleNewFileUpload,
     isValidDiff,
