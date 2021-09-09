@@ -1,13 +1,14 @@
-import path from "path";
 import fs from "fs";
+import path from "path";
+import untildify from "untildify";
+
 import {handleRename} from "../../../../lib/events/utils";
 import {randomBaseRepoPath, randomRepoPath, waitFor} from "../../../helpers/helpers";
 import {readYML} from "../../../../lib/utils/common";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../../lib/constants";
-import untildify from "untildify";
 
 
-describe("handleNewFile",  () => {
+describe("handleRename",  () => {
     const repoPath = randomRepoPath();
 
     const baseRepo = randomBaseRepoPath();

@@ -1,11 +1,11 @@
 import fs from "fs";
 import path from "path";
+import untildify from "untildify";
 
 import {readYML} from "../../../../lib/utils/common";
 import {handleNewFile} from "../../../../lib/events/utils";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../../lib/constants";
 import {randomBaseRepoPath, randomRepoPath} from "../../../helpers/helpers";
-import untildify from "untildify";
 
 describe("handleNewFile",  () => {
     const repoPath = randomRepoPath();
