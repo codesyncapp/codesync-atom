@@ -117,7 +117,6 @@ describe("setupCodeSync",  () => {
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.UNSYNC_REPO);
         expect(options.dismissable).toBe(true);
-
         fs.rmSync(userFilePath);
     });
 
