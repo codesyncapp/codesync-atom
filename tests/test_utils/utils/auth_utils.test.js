@@ -14,6 +14,9 @@ import {Auth0URLs, LOGIN_SUCCESS_CALLBACK, NOTIFICATION} from "../../../lib/cons
 import {buildAtomEnv, INVALID_TOKEN_JSON, randomBaseRepoPath, randomRepoPath, TEST_EMAIL} from "../../helpers/helpers";
 import { readYML } from "../../../lib/utils/common";
 
+const { shell } = require('electron');
+
+
 describe("isPortAvailable",  () => {
     test("random free port", async () => {
         expect(await isPortAvailable(59402)).toBe(true);
@@ -47,14 +50,22 @@ describe("createRedirectUri",  () => {
 });
 
 describe("redirectToBrowser",  () => {
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     test("skipAskConnect=false",  () => {
         redirectToBrowser();
         expect(global.skipAskConnect).toBe(false);
+        expect(shell.openExternal).toHaveBeenCalledTimes(1);
+
     });
 
     test("skipAskConnect=true",  () => {
         redirectToBrowser(true);
         expect(global.skipAskConnect).toBe(true);
+        expect(shell.openExternal).toHaveBeenCalledTimes(1);
     });
 });
 

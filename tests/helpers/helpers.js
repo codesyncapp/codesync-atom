@@ -32,11 +32,16 @@ export const buildAtomEnv = () => {
         },
         notifications: {
             addWarning: jest.fn(),
-            addInfo: jest.fn(),
+            addInfo: jest.fn(() => ({
+                    dismiss: jest.fn()
+            })),
             addError: jest.fn()
         },
         project: {
             getPaths: jest.fn()
+        },
+        workspace: {
+            observeTextEditors: jest.fn()
         }
     };
 };
