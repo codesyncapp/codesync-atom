@@ -40,5 +40,22 @@
     "untildify": "^4.0.0",
     "walk": "^2.3.14",
     "websocket": "^1.0.34"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.15.5",
+    "@babel/preset-env": "^7.15.4",
+    "babel-jest": "^27.1.0",
+    "jest": "^27.1.0",
+    "jest-fetch-mock": "^3.0.3"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "automock": false,
+    "collectCoverage": true,
+    "setupFiles": [
+      "./setupJest.js"
+    ]
   }
 }

@@ -1,6 +1,6 @@
 'use babel';
 
-import CodesyncAtom from '../lib/codesync-atom';
+import CodesyncAtom from '../lib/codesync';
 
 // Use the command `window:run-package-specs` (cmd-alt-ctrl-p) to run specs.
 //
