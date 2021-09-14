@@ -4,11 +4,27 @@
       "label": "Packages",
       "submenu": [
         {
-          "label": "Codesync",
+          "label": "CodeSync",
           "submenu": [
             {
-              "label": "Run",
-              "command": "codesync:activate"
+              "label": "Authenticate",
+              "command": "CodeSync: Sign Up"
+            },
+            {
+              "label": "Connect Repo",
+              "command": "CodeSync: Connect Repo"
+            },
+            {
+              "label": "Disconnect Repo",
+              "command": "CodeSync: Disconnect Repo"
+            },
+            {
+              "label": "View Repo Playback",
+              "command": "codesync.trackRepo"
+            },
+            {
+              "label": "View File Playback",
+              "command": "codesync.trackFile"
             }
           ]
         }

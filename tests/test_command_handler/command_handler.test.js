@@ -285,56 +285,34 @@ describe("trackFileHandler", () => {
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
     });
 
-    test("Normal operation", () => {
+    test("No editor opened", () => {
         // Mock data
         global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.workspace.getActiveTextEditor.mockReturnValueOnce(undefined);
         trackFileHandler();
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
-        expect(global.atom.workspace.observeTextEditors).toHaveBeenCalledTimes(1);
-    });
-});
-
-
-describe("trackFileHandler: observeEditor", () => {
-    const repoPath = randomRepoPath();
-    const baseRepoPath = randomBaseRepoPath();
-    const configPath = `${baseRepoPath}/config.yml`;
-    const configData = {repos: {}};
-    const userFilePath = `${baseRepoPath}/user.yml`;
-    const userData = {};
-    userData[TEST_EMAIL] = {access_token: "ABC"};
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        buildAtomEnv();
-        untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
-        fs.mkdirSync(repoPath, {recursive: true});
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-    });
-
-    afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        expect(global.atom.workspace.getActiveTextEditor).toHaveBeenCalledTimes(1);
     });
 
     test("No file is opened", () => {
         // Mock data
-        const editor = {
-            getPath: jest.fn()
-        };
-        editor.getPath.mockReturnValueOnce(null);
-        observeEditor(repoPath, editor);
+        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
+            getPath: jest.fn(() => {
+                return null;
+            })
+        });
+        trackFileHandler();
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
     });
 
     test("File Path not in config", () => {
-        // Mock data
-        const editor = {
-            getPath: jest.fn()
-        };
-        editor.getPath.mockReturnValueOnce(`${repoPath}/file.js`);
+        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
+            getPath: jest.fn(() => {
+                return `${repoPath}/file.js`;
+            })
+        });
         getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
         // Update config file
         configData.repos[repoPath] = {
@@ -343,17 +321,19 @@ describe("trackFileHandler: observeEditor", () => {
         };
         configData.repos[repoPath].branches[DEFAULT_BRANCH] = {};
         fs.writeFileSync(configPath, yaml.safeDump(configData));
-        observeEditor(repoPath, editor);
+        trackFileHandler();
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
     });
 
 
     test("File Path in config", () => {
         // Mock data
-        const editor = {
-            getPath: jest.fn()
-        };
-        editor.getPath.mockReturnValueOnce(`${repoPath}/file.js`);
+        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
+            getPath: jest.fn(() => {
+                return `${repoPath}/file.js`;
+            })
+        });
         getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
         // Update config file
         configData.repos[repoPath] = {
@@ -362,7 +342,7 @@ describe("trackFileHandler: observeEditor", () => {
         };
         configData.repos[repoPath].branches[DEFAULT_BRANCH] = {"file.js": 1234};
         fs.writeFileSync(configPath, yaml.safeDump(configData));
-        observeEditor(repoPath, editor);
+        trackFileHandler();
         expect(shell.openExternal).toHaveBeenCalledTimes(1);
     });
 

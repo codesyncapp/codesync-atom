@@ -41,7 +41,7 @@ export const buildAtomEnv = () => {
             getPaths: jest.fn()
         },
         workspace: {
-            observeTextEditors: jest.fn()
+            getActiveTextEditor: jest.fn()
         }
     };
 };
