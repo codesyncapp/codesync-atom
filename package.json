@@ -34,7 +34,6 @@
     "isbinaryfile": "^4.0.8",
     "js-yaml": "^3.14.1",
     "jwt-decode": "^3.1.2",
-    "lodash": "^4.17.21",
     "node-fetch": "^2.6.1",
     "run-parallel": "^1.2.0",
     "untildify": "^4.0.0",

@@ -18,7 +18,7 @@ import {
     randomRepoPath,
     TEST_EMAIL
 } from "../helpers/helpers";
-import {NOTIFICATION} from "../../lib/constants";
+import {getRepoInSyncMsg, NOTIFICATION} from "../../lib/constants";
 import {WEB_APP_URL} from "../../lib/settings";
 import {readYML} from "../../lib/utils/common";
 import {DEFAULT_BRANCH} from "../../lib/constants";
@@ -84,7 +84,8 @@ describe("SyncHandler", () => {
         global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
         SyncHandler();
         expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_IN_SYNC);
+        const repoInSyncMsg = getRepoInSyncMsg(repoPath);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(repoInSyncMsg);
         const options = global.atom.notifications.addInfo.mock.calls[0][1];
         expect(options).toBeFalsy();
     });

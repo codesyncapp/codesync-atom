@@ -4,7 +4,7 @@ import untildify from "untildify";
 
 import {buildAtomEnv, randomBaseRepoPath, randomRepoPath} from "../../helpers/helpers";
 import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../../lib/utils/setup_utils";
-import {NOTIFICATION} from "../../../lib/constants";
+import {getRepoInSyncMsg, NOTIFICATION} from "../../../lib/constants";
 
 
 describe("createSystemDirectories",  () => {
@@ -111,7 +111,8 @@ describe("setupCodeSync",  () => {
         // should return port number
         expect(port).toBeFalsy();
         expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.REPO_IN_SYNC);
+        const repoInSyncMsg = getRepoInSyncMsg(repoPath);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(repoInSyncMsg);
         const options = global.atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(2);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
