@@ -48,19 +48,20 @@ describe("showChooseAccount",  () => {
     });
 });
 
-describe("askPublicPrivate",  () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    test("askPublicPrivate",  async () => {
-        await askPublicPrivate();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.PUBLIC_OR_PRIVATE);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
-        expect(options.buttons).toHaveLength(2);
-        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.YES);
-        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.NO);
-        expect(options.dismissable).toBe(true);
-    });
-});
+// TODO: Will use this for init_handler
+// describe("askPublicPrivate",  () => {
+//     beforeEach(() => {
+//         jest.clearAllMocks();
+//     });
+//
+//     test("askPublicPrivate",  async () => {
+//         await askPublicPrivate();
+//         expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+//         expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.PUBLIC_OR_PRIVATE);
+//         const options = global.atom.notifications.addInfo.mock.calls[0][1];
+//         expect(options.buttons).toHaveLength(2);
+//         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.YES);
+//         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.NO);
+//         expect(options.dismissable).toBe(true);
+//     });
+// });
