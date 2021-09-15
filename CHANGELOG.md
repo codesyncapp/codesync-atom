@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.25.0] - 2021-09-15
 ### Updated
-- Repo is in sync -> Repo XYZ is in sync
+- Notification msg updated from _Repo is in sync_ to _Repo XYZ is in sync_
+- Refactored Express server using HTML/CSS for better UX
 
 ## [2.24.0] - 2021-09-15
 ### Fixed

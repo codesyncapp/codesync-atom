@@ -5,14 +5,15 @@ import fetchMock from "jest-fetch-mock";
 import {
     askAndTriggerSignUp,
     createRedirectUri,
-    createUser, initExpressServer,
+    createUser,
     isPortAvailable,
     logout,
     redirectToBrowser
 } from "../../../lib/utils/auth_utils";
-import {Auth0URLs, LOGIN_SUCCESS_CALLBACK, NOTIFICATION} from "../../../lib/constants";
+import {Auth0URLs, NOTIFICATION} from "../../../lib/constants";
 import {buildAtomEnv, INVALID_TOKEN_JSON, randomBaseRepoPath, randomRepoPath, TEST_EMAIL} from "../../helpers/helpers";
 import { readYML } from "../../../lib/utils/common";
+import { initExpressServer } from "../../../lib/server/server";
 
 const { shell } = require('electron');
 
@@ -33,7 +34,7 @@ describe("initExpressServer",  () => {
         global.port = port;
         initExpressServer();
 
-        const refUrl = `http://localhost:${port}${LOGIN_SUCCESS_CALLBACK}`;
+        const refUrl = `http://localhost:${port}${Auth0URLs.LOGIN_CALLBACK_PATH}`;
         const url = createRedirectUri();
         expect(url).toEqual(refUrl);
     });
@@ -43,7 +44,7 @@ describe("createRedirectUri",  () => {
     test("createRedirectUri",  () => {
         const port = 1234;
         global.port = port;
-        const refUrl = `http://localhost:${port}${LOGIN_SUCCESS_CALLBACK}`;
+        const refUrl = `http://localhost:${port}${Auth0URLs.LOGIN_CALLBACK_PATH}`;
         const url = createRedirectUri();
         expect(url).toEqual(refUrl);
     });

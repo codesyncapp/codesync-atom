@@ -4,4 +4,6 @@ const express = jest.fn(() => ({
         get: jest.fn(),
     })
 );
+express.static = jest.fn();
+
 module.exports = express;
