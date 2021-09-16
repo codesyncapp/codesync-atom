@@ -85,8 +85,8 @@ describe("successfullySynced",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("Non-Synced Repo",  () => {
@@ -144,8 +144,8 @@ describe("getSyncablePaths",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("No .syncignore",  () => {
@@ -201,8 +201,8 @@ describe("copyFilesTo",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("Copy to Shadow repo",  () => {
@@ -310,8 +310,8 @@ describe("saveFileIds",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("Should save file IDs",  () => {
@@ -345,8 +345,8 @@ describe("uploadRepo",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("Server Down",  async () => {

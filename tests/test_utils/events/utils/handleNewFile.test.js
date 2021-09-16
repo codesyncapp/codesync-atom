@@ -10,10 +10,10 @@ import {randomBaseRepoPath, randomRepoPath} from "../../../helpers/helpers";
 describe("handleNewFile",  () => {
     const repoPath = randomRepoPath();
 
-    const baseRepo = randomBaseRepoPath();
-    const shadowRepoPath = path.join(baseRepo, ".shadow");
-    const originalsRepoPath = path.join(baseRepo, ".originals");
-    const diffsRepo = path.join(baseRepo, ".diffs/.atom");
+    const baseRepoPath = randomBaseRepoPath();
+    const shadowRepoPath = path.join(baseRepoPath, ".shadow");
+    const originalsRepoPath = path.join(baseRepoPath, ".originals");
+    const diffsRepo = path.join(baseRepoPath, ".diffs/.atom");
     const shadowRepoBranchPath = path.join(shadowRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
     const originalsRepoBranchPath = path.join(originalsRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
 
@@ -28,7 +28,7 @@ describe("handleNewFile",  () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        untildify.mockReturnValue(baseRepo);
+        untildify.mockReturnValue(baseRepoPath);
         // Create directories
         fs.mkdirSync(repoPath, { recursive: true });
         fs.mkdirSync(diffsRepo, { recursive: true });
@@ -40,7 +40,7 @@ describe("handleNewFile",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepo, { recursive: true });
+        fs.rmdirSync(baseRepoPath, { recursive: true });
         fs.rmdirSync(repoPath, { recursive: true });
     });
 

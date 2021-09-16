@@ -52,7 +52,7 @@ describe("setupCodeSync",  () => {
 
     afterEach(() => {
         fs.rmdirSync(baseRepoPath, {recursive: true});
-        fs.rmdirSync(repoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
     });
 
     test('with no user.yml', async () => {

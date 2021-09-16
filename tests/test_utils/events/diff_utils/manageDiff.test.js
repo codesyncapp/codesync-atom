@@ -12,8 +12,8 @@ import {DIFF_SOURCE} from "../../../../lib/constants";
 describe("manageDiff", () => {
 
     const repoPath = randomRepoPath();
-    const baseRepo = randomBaseRepoPath();
-    const diffsRepo = path.join(baseRepo, ".diffs/.atom");
+    const baseRepoPath = randomBaseRepoPath();
+    const diffsRepo = path.join(baseRepoPath, ".diffs/.atom");
     const newFilePath = `${repoPath}/new.js`;
 
     beforeEach(() => {
@@ -21,13 +21,13 @@ describe("manageDiff", () => {
         fs.mkdirSync(repoPath, { recursive: true });
         fs.mkdirSync(diffsRepo, { recursive: true });
         jest.clearAllMocks();
-        untildify.mockReturnValue(baseRepo);
+        untildify.mockReturnValue(baseRepoPath);
 
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepo, { recursive: true });
-        fs.rmdirSync(repoPath, { recursive: true });
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("should be skipped",() => {

@@ -1,9 +1,10 @@
 import fs from "fs";
 import yaml from "js-yaml";
 import untildify from "untildify";
-import {NOTIFICATION} from "../../../lib/constants";
-import {buildAtomEnv, randomBaseRepoPath, randomRepoPath, TEST_EMAIL} from "../../helpers/helpers";
-import {askPublicPrivate, showChooseAccount} from "../../../lib/utils/notifications";
+import { getPublicPrivateMsg, NOTIFICATION } from "../../../lib/constants";
+import { buildAtomEnv, randomBaseRepoPath, randomRepoPath, TEST_EMAIL } from "../../helpers/helpers";
+import { showChooseAccount } from "../../../lib/utils/notifications";
+import { askPublicOrPrivate } from "../../../lib/init/init_handler";
 
 
 describe("showChooseAccount",  () => {
@@ -23,8 +24,8 @@ describe("showChooseAccount",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("with no user",  () => {
@@ -48,20 +49,22 @@ describe("showChooseAccount",  () => {
     });
 });
 
-// TODO: Will use this for init_handler
-// describe("askPublicPrivate",  () => {
-//     beforeEach(() => {
-//         jest.clearAllMocks();
-//     });
-//
-//     test("askPublicPrivate",  async () => {
-//         await askPublicPrivate();
-//         expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-//         expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.PUBLIC_OR_PRIVATE);
-//         const options = global.atom.notifications.addInfo.mock.calls[0][1];
-//         expect(options.buttons).toHaveLength(2);
-//         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.YES);
-//         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.NO);
-//         expect(options.dismissable).toBe(true);
-//     });
-// });
+describe("askPublicOrPrivate",  () => {
+    const repoPath = randomRepoPath();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    test("askPublicOrPrivate",  async () => {
+        await askPublicOrPrivate(repoPath);
+        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        const msg = getPublicPrivateMsg(repoPath);
+        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(msg);
+        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.PUBLIC);
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.PRIVATE);
+        expect(options.dismissable).toBe(true);
+    });
+});

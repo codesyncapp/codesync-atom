@@ -137,8 +137,8 @@ describe("handleNewFileUpload",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("File not in .originals",  async () => {
@@ -198,8 +198,8 @@ describe("handleFilesRename",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("Old file is in .shadow",  () => {
@@ -262,8 +262,8 @@ describe("cleanUpDeleteDiff",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("Should cleanup file from system directories",  () => {
@@ -318,8 +318,8 @@ describe("getDIffForDeletedFile",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(repoPath, {recursive: true});
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("No shadow file",  () => {

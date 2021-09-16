@@ -11,9 +11,9 @@ import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../../lib/constants";
 describe("handleRename",  () => {
     const repoPath = randomRepoPath();
 
-    const baseRepo = randomBaseRepoPath();
-    const shadowRepoPath = path.join(baseRepo, ".shadow");
-    const diffsRepo = path.join(baseRepo, ".diffs/.atom");
+    const baseRepoPath = randomBaseRepoPath();
+    const shadowRepoPath = path.join(baseRepoPath, ".shadow");
+    const diffsRepo = path.join(baseRepoPath, ".diffs/.atom");
     const shadowRepoBranchPath = path.join(shadowRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
 
     // For file rename
@@ -34,7 +34,7 @@ describe("handleRename",  () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        untildify.mockReturnValue(baseRepo);
+        untildify.mockReturnValue(baseRepoPath);
 
         // Create directories
         fs.mkdirSync(repoPath, { recursive: true });
@@ -52,7 +52,7 @@ describe("handleRename",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepo, { recursive: true });
+        fs.rmdirSync(baseRepoPath, { recursive: true });
         fs.rmdirSync(repoPath, { recursive: true });
     });
 
