@@ -4,7 +4,6 @@ import untildify from "untildify";
 import fetchMock from "jest-fetch-mock";
 
 import {
-    observeEditor,
     postSelectionUnsync,
     SignUpHandler,
     SyncHandler,
@@ -66,16 +65,18 @@ describe("SyncHandler", () => {
         expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
-    test("repo Not In Config", () => {
+    test("repo Not In Config",  () => {
         global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
         SyncHandler();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
-        expect(options.buttons).toHaveLength(2);
-        expect(options.buttons[0].text).toStrictEqual(TEST_EMAIL);
-        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.USE_DIFFERENT_ACCOUNT);
-        expect(options.dismissable).toBe(true);
+        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(0);
+        // TODO: In case we activate choose account option
+        // expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        // expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);
+        // const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        // expect(options.buttons).toHaveLength(2);
+        // expect(options.buttons[0].text).toStrictEqual(TEST_EMAIL);
+        // expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.USE_DIFFERENT_ACCOUNT);
+        // expect(options.dismissable).toBe(true);
     });
 
     test("repo In Config", () => {
