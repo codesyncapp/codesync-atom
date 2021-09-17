@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved UX for asking if repo should be public or private
 - Menu options change on the fly with 100% coverage
 
+### Fixed
+- Uninstall and install CodeSync adds a new tile in bottom right of status bar
+
 ## [2.24.0] - 2021-09-15
 ### Fixed
 -Fixed postClickVisibility for syncing repo
