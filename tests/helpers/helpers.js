@@ -42,6 +42,13 @@ export const buildAtomEnv = () => {
         },
         workspace: {
             getActiveTextEditor: jest.fn()
+        },
+        menu: {
+            add: jest.fn(),
+            sortPackagesMenu: jest.fn()
+        },
+        contextMenu: {
+            add: jest.fn()
         }
     };
 };

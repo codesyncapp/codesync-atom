@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Notification msg updated from _Repo is in sync_ to _Repo XYZ is in sync_
 - Refactored Express server using HTML/CSS for better UX
 - Improved UX for asking if repo should be public or private
+- Menu options change on the fly with 100% coverage
 
 ## [2.24.0] - 2021-09-15
 ### Fixed
