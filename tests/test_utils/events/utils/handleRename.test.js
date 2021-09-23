@@ -110,11 +110,11 @@ describe("handleRename",  () => {
         expect(diffData.is_deleted).toBeFalsy();
         expect(diffData.repo_path).toEqual(repoPath);
         expect(diffData.branch).toEqual(DEFAULT_BRANCH);
-        expect(diffData.file_relative_path).toEqual("new/file.js");
+        expect(diffData.file_relative_path).toEqual(path.join("new", "file.js"));
         expect(JSON.parse(diffData.diff).old_abs_path).toEqual(oldDirectoryFilePath);
         expect(JSON.parse(diffData.diff).new_abs_path).toEqual(newDirectoryFilePath);
-        expect(JSON.parse(diffData.diff).old_rel_path).toEqual("old/file.js");
-        expect(JSON.parse(diffData.diff).new_rel_path).toEqual("new/file.js");
+        expect(JSON.parse(diffData.diff).old_rel_path).toEqual(path.join("old", "file.js"));
+        expect(JSON.parse(diffData.diff).new_rel_path).toEqual(path.join("new", "file.js"));
         fs.rmSync(diffFilePath);
     });
 

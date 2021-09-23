@@ -28,6 +28,7 @@ import {readYML} from "../../../lib/utils/common";
 import fetchMock from "jest-fetch-mock";
 import {isBinaryFileSync} from "isbinaryfile";
 import {DEFAULT_BRANCH, NOTIFICATION, SYNCIGNORE} from "../../../lib/constants";
+import {pathUtils} from "../../../lib/utils/path_utils";
 
 
 describe("isValidRepoSize",  () => {
@@ -203,7 +204,10 @@ describe("copyFilesTo",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
     const filePath = path.join(repoPath, "file.js");
-    const shadowRepo = path.join(baseRepoPath, ".shadow", repoPath);
+    untildify.mockReturnValue(baseRepoPath);
+
+    const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
+    const shadowRepo = pathUtilsObj.getShadowRepoPath();
 
     beforeEach(() => {
         mkDir(repoPath);
