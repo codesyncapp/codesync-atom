@@ -1,25 +1,22 @@
 'use bable';
 
 import fs from "fs";
-import {describe, expect, test} from '@jest/globals'
+import path from "path";
 import { getSkipRepos, getSyncIgnoreItems } from "../../../../lib/utils/common";
-import { randomRepoPath } from "../../../helpers/helpers";
+import { DUMMY_FILE_CONTENT, getSyncIgnoreFilePath, randomRepoPath} from "../../../helpers/helpers";
 import { IGNORABLE_DIRECTORIES } from "../../../../lib/constants";
 
 const repoPath = randomRepoPath();
-const syncIgnorePath = `${repoPath}/.syncignore`;
+const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
 const syncIgnoreData = ".skip_repo_1\n\n\n.skip_repo_2\n";
 
 describe("getSkipRepos", function() {
     beforeEach(() => {
-        if (fs.existsSync(repoPath)) {
-            fs.rmdirSync(repoPath);
-        }
         // Create directories
         fs.mkdirSync(repoPath, { recursive: true });
-        fs.mkdirSync(`${repoPath}/.skip_repo_1`, { recursive: true });
-        fs.mkdirSync(`${repoPath}/.skip_repo_2`, { recursive: true });
-        fs.writeFileSync(`${repoPath}/file.js`, "");
+        fs.mkdirSync(path.join(repoPath, ".skip_repo_1"), { recursive: true });
+        fs.mkdirSync(path.join(repoPath, ".skip_repo_2"), { recursive: true });
+        fs.writeFileSync(path.join(repoPath, "file.js"), DUMMY_FILE_CONTENT);
     });
 
     afterEach(() => {

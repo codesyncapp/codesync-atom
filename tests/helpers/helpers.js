@@ -1,4 +1,5 @@
 import {DIFF_SOURCE} from "../../lib/constants";
+import path from "path";
 
 export function getRandomString(length) {
     var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -13,12 +14,27 @@ export function randomName() {
     return getRandomString(10);
 }
 
+function randomBaseRepoName() {
+    return `.codesync_${randomName()}`;
+}
+
+function randomRepoName() {
+    return `test_repo_${randomName()}`;
+}
+
 export function randomBaseRepoPath() {
-    return `tests/tests_data/.codesync_${randomName()}`;
+    const posixPath = path.join("tests", "tests_data", randomBaseRepoName());
+    const windowPath = path.join("tests", "tests_data", "C:", randomBaseRepoName());
+    const paths = [posixPath, windowPath];
+    return paths[Math.floor(Math.random() * paths.length)];
 }
 
 export function randomRepoPath() {
-    return `tests/tests_data/test_repo_${randomName()}`;
+    const posixPath = path.join("tests", "tests_data", randomRepoName());
+    const windowPath = path.join("tests", "tests_data", "C:", randomRepoName());
+    const paths = [posixPath, windowPath];
+    // return paths[Math.floor(Math.random() * paths.length)];
+    return windowPath;
 }
 
 export async function waitFor(seconds) {
@@ -103,3 +119,19 @@ export const DIFF_DATA = {
     diff: null,
     source: DIFF_SOURCE
 };
+
+export function getConfigFilePath(baseRepoPath) {
+    return path.join(baseRepoPath, "config.yml");
+}
+
+export function getUserFilePath(baseRepoPath) {
+    return path.join(baseRepoPath, "user.yml");
+}
+
+export function getSeqTokenFilePath(baseRepoPath) {
+    return path.join(baseRepoPath, "sequence_token.yml");
+}
+
+export function getSyncIgnoreFilePath(repoPath) {
+    return path.join(repoPath, ".syncignore");
+}

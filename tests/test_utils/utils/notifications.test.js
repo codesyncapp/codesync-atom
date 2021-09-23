@@ -2,7 +2,7 @@ import fs from "fs";
 import yaml from "js-yaml";
 import untildify from "untildify";
 import { getPublicPrivateMsg, NOTIFICATION } from "../../../lib/constants";
-import { buildAtomEnv, randomBaseRepoPath, randomRepoPath, TEST_EMAIL } from "../../helpers/helpers";
+import {buildAtomEnv, getUserFilePath, randomBaseRepoPath, randomRepoPath, TEST_EMAIL} from "../../helpers/helpers";
 import { showChooseAccount } from "../../../lib/utils/notifications";
 import { askPublicOrPrivate } from "../../../lib/init/init_handler";
 
@@ -10,7 +10,7 @@ import { askPublicOrPrivate } from "../../../lib/init/init_handler";
 describe("showChooseAccount",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {};
     userData[TEST_EMAIL] = {access_token: "ABC"};
 

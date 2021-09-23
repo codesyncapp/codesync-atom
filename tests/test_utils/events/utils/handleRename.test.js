@@ -6,31 +6,34 @@ import {handleRename} from "../../../../lib/events/utils";
 import {randomBaseRepoPath, randomRepoPath, waitFor} from "../../../helpers/helpers";
 import {readYML} from "../../../../lib/utils/common";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../../lib/constants";
+import {pathUtils} from "../../../../lib/utils/path_utils";
 
 
 describe("handleRename",  () => {
     const repoPath = randomRepoPath();
-
     const baseRepoPath = randomBaseRepoPath();
-    const shadowRepoPath = path.join(baseRepoPath, ".shadow");
-    const diffsRepo = path.join(baseRepoPath, ".diffs/.atom");
-    const shadowRepoBranchPath = path.join(shadowRepoPath, `${repoPath}/${DEFAULT_BRANCH}`);
+
+    untildify.mockReturnValue(baseRepoPath);
+
+    const diffsRepo = path.join(baseRepoPath, ".diffs", ".atom");
+    const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
+    const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
 
     // For file rename
-    const oldFilePath = `${repoPath}/old.js`;
-    const newFilePath = `${repoPath}/new.js`;
-    const oldShadowFilePath = `${shadowRepoBranchPath}/old.js`;
-    const renamedShadowFilePath = `${shadowRepoBranchPath}/new.js`;
+    const oldFilePath = path.join(repoPath, "old.js");
+    const newFilePath = path.join(repoPath, "new.js");
+    const oldShadowFilePath = path.join(shadowRepoBranchPath, "old.js");
+    const renamedShadowFilePath = path.join(shadowRepoBranchPath, "new.js");
 
     // For directory rename
-    const oldDirectoryPath = `${repoPath}/old`;
-    const newDirectoryPath = `${repoPath}/new`;
-    const oldDirectoryFilePath = `${oldDirectoryPath}/file.js`;
-    const newDirectoryFilePath = `${newDirectoryPath}/file.js`;
-    const oldShadowDirectoryPath = `${shadowRepoBranchPath}/old`;
-    const renamedShadowDirectoryPath = `${shadowRepoBranchPath}/new`;
-    const oldShadowDirectoryFilePath = `${oldShadowDirectoryPath}/file.js`;
-    const renamedShadowDirectoryFilePath = `${renamedShadowDirectoryPath}/file.js`;
+    const oldDirectoryPath = path.join(repoPath, "old");
+    const newDirectoryPath = path.join(repoPath, "new");
+    const oldDirectoryFilePath = path.join(oldDirectoryPath, "file.js");
+    const newDirectoryFilePath = path.join(newDirectoryPath, "file.js");
+    const oldShadowDirectoryPath = path.join(shadowRepoBranchPath, "old");
+    const renamedShadowDirectoryPath = path.join(shadowRepoBranchPath, "new");
+    const oldShadowDirectoryFilePath = path.join(oldShadowDirectoryPath, "file.js");
+    const renamedShadowDirectoryFilePath = path.join(renamedShadowDirectoryPath, "file.js");
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -76,7 +79,7 @@ describe("handleRename",  () => {
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(1);
-        const diffFilePath = `${diffsRepo}/${diffFiles[0]}`;
+        const diffFilePath = path.join(diffsRepo, diffFiles[0]);
         const diffData = readYML(diffFilePath);
         expect(diffData.source).toEqual(DIFF_SOURCE);
         expect(diffData.is_rename).toBe(true);
@@ -100,7 +103,7 @@ describe("handleRename",  () => {
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(1);
-        const diffFilePath = `${diffsRepo}/${diffFiles[0]}`;
+        const diffFilePath = path.join(diffsRepo, diffFiles[0]);
         const diffData = readYML(diffFilePath);
         expect(diffData.source).toEqual(DIFF_SOURCE);
         expect(diffData.is_rename).toBe(true);

@@ -9,15 +9,21 @@ import {
     updateContextMenu,
     updateMenu
 } from "../../../lib/utils/menu_utils";
-import {buildAtomEnv, randomBaseRepoPath, randomRepoPath} from "../../helpers/helpers";
+import {
+    buildAtomEnv,
+    getConfigFilePath,
+    getUserFilePath,
+    randomBaseRepoPath,
+    randomRepoPath
+} from "../../helpers/helpers";
 
 
 describe("generateMenu",  () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {"dummy_email": {access_token: "ABC"}};
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -94,9 +100,9 @@ describe("generateMenu",  () => {
 describe("generateRightClickMenu",  () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {"dummy_email": {access_token: "ABC"}};
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
 
     beforeEach(() => {
         jest.clearAllMocks();
