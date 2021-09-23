@@ -108,22 +108,10 @@ function randomRepoName() {
 }
 
 export function randomBaseRepoPath() {
-    // const posixPath = path.join("tests", "tests_data", randomBaseRepoName());
-    // const windowPath = path.join("tests", "tests_data", "C:", randomBaseRepoName());
-    // const paths = [posixPath, windowPath];
-    // return paths[Math.floor(Math.random() * paths.length)];
-    // return windowPath;
-    // return posixPath;
     return path.join(__dirname, "..", "tests_data", randomBaseRepoName());
 }
 
 export function randomRepoPath() {
-    // const posixPath = path.join("tests", "tests_data", randomRepoName());
-    // const windowPath = path.join(__dirname, "tests_data", randomRepoName());
-    // const paths = [posixPath, windowPath];
-    // return paths[Math.floor(Math.random() * paths.length)];
-    // return path.join(__dirname, "..", "tests_data", randomRepoName());
-    // return posixPath;
     return path.join(__dirname, "..", "tests_data", randomRepoName());
 }
 
