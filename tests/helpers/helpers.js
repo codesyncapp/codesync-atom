@@ -161,6 +161,6 @@ export function rmDir(dirPath) {
 }
 
 export function writeFile(filePath, data) {
-    const formattedPath = formatPath(filePath);
-    fs.writeFileSync(formattedPath, data);
+    // const formattedPath = formatPath(filePath);
+    fs.writeFileSync(filePath, data);
 }
