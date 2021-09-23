@@ -1,25 +1,7 @@
+import fs from "fs";
+import path from "path";
+
 import {DIFF_SOURCE} from "../../lib/constants";
-
-export function getRandomString(length) {
-    var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    var result = '';
-    for ( let i = 0; i < length; i++ ) {
-        result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
-    }
-    return result;
-}
-
-export function randomName() {
-    return getRandomString(10);
-}
-
-export function randomBaseRepoPath() {
-    return `tests/tests_data/.codesync_${randomName()}`;
-}
-
-export function randomRepoPath() {
-    return `tests/tests_data/test_repo_${randomName()}`;
-}
 
 export async function waitFor(seconds) {
     return await new Promise((r) => setTimeout(r, seconds*1000));
@@ -103,3 +85,60 @@ export const DIFF_DATA = {
     diff: null,
     source: DIFF_SOURCE
 };
+
+export function getRandomString(length) {
+    var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    var result = '';
+    for ( let i = 0; i < length; i++ ) {
+        result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+    }
+    return result;
+}
+
+export function randomName() {
+    return getRandomString(10);
+}
+
+function randomBaseRepoName() {
+    return `.codesync_${randomName()}`;
+}
+
+function randomRepoName() {
+    return `test_repo_${randomName()}`;
+}
+
+export function randomBaseRepoPath() {
+    return path.join(__dirname, "..", "tests_data", randomBaseRepoName());
+}
+
+export function randomRepoPath() {
+    return path.join(__dirname, "..", "tests_data", randomRepoName());
+}
+
+export function getConfigFilePath(baseRepoPath) {
+    return path.join(baseRepoPath, "config.yml");
+}
+
+export function getUserFilePath(baseRepoPath) {
+    return path.join(baseRepoPath, "user.yml");
+}
+
+export function getSeqTokenFilePath(baseRepoPath) {
+    return path.join(baseRepoPath, "sequence_token.yml");
+}
+
+export function getSyncIgnoreFilePath(repoPath) {
+    return path.join(repoPath, ".syncignore");
+}
+
+export function mkDir(dirPath) {
+    fs.mkdirSync(dirPath, {recursive: true});
+}
+
+export function rmDir(dirPath) {
+    fs.rmSync(dirPath, { recursive: true, force: true });
+}
+
+export function writeFile(filePath, data) {
+    fs.writeFileSync(filePath, data);
+}

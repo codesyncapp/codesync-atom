@@ -1,8 +1,9 @@
 import fs from "fs";
+import path from "path";
 import yaml from "js-yaml";
+import untildify from 'untildify';
 import getBranchName from 'current-git-branch';
 import {initUtils} from "../../../lib/init/utils";
-import untildify from 'untildify';
 
 import {
     ANOTHER_TEST_EMAIL,
@@ -13,30 +14,41 @@ import {
     TEST_USER,
     USER_PLAN,
     randomBaseRepoPath,
-    randomRepoPath, buildAtomEnv
+    randomRepoPath,
+    buildAtomEnv,
+    getConfigFilePath,
+    getUserFilePath,
+    getSeqTokenFilePath,
+    getSyncIgnoreFilePath,
+    mkDir,
+    writeFile,
+    rmDir
 } from "../../helpers/helpers";
-import {DEFAULT_BRANCH, NOTIFICATION, SYNCIGNORE} from "../../../lib/constants";
 import {readYML} from "../../../lib/utils/common";
 import fetchMock from "jest-fetch-mock";
 import {isBinaryFileSync} from "isbinaryfile";
+import {DEFAULT_BRANCH, NOTIFICATION, SYNCIGNORE} from "../../../lib/constants";
+import {pathUtils} from "../../../lib/utils/path_utils";
 
 
 describe("isValidRepoSize",  () => {
-
-    const initUtilsObj = new initUtils();
+    const baseRepoPath = randomBaseRepoPath();
 
     beforeEach(() => {
         buildAtomEnv();
         jest.clearAllMocks();
+        untildify.mockReturnValue(baseRepoPath);
     });
 
     test("true result",  () => {
+        const initUtilsObj = new initUtils();
         const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE-10, USER_PLAN);
         expect(isValid).toBe(true);
         expect(global.atom.notifications.addError).toHaveBeenCalledTimes(0);
     });
 
     test("false result",  () => {
+        const initUtilsObj = new initUtils();
         const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE+10, USER_PLAN);
         expect(isValid).toBe(false);
         expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
@@ -47,20 +59,22 @@ describe("isValidRepoSize",  () => {
 });
 
 describe("isValidFilesCount",  () => {
-
-    const initUtilsObj = new initUtils();
+    const baseRepoPath = randomBaseRepoPath();
 
     beforeEach(() => {
         jest.clearAllMocks();
+        untildify.mockReturnValue(baseRepoPath);
     });
 
     test("true result",  () => {
+        const initUtilsObj = new initUtils();
         const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT-10, USER_PLAN);
         expect(isValid).toBe(true);
         expect(global.atom.notifications.addError).toHaveBeenCalledTimes(0);
     });
 
     test("false result",  () => {
+        const initUtilsObj = new initUtils();
         const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT+10, USER_PLAN);
         expect(isValid).toBe(false);
         expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
@@ -73,14 +87,14 @@ describe("isValidFilesCount",  () => {
 describe("successfullySynced",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
 
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
-        fs.mkdirSync(repoPath, {recursive: true});
+        fs.mkdirSync(baseRepoPath);
+        fs.mkdirSync(repoPath);
         fs.writeFileSync(configPath, yaml.safeDump(configData));
     });
 
@@ -133,14 +147,14 @@ describe("successfullySynced",  () => {
 describe("getSyncablePaths",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const syncIgnorePath = `${repoPath}/.syncignore`;
-    const filePath = `${repoPath}/file.js`;
+    const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
+    const filePath = path.join(repoPath, "file.js");
 
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
-        fs.mkdirSync(repoPath, {recursive: true});
+        mkDir(baseRepoPath);
+        mkDir(repoPath);
     });
 
     afterEach(() => {
@@ -158,7 +172,7 @@ describe("getSyncablePaths",  () => {
     test("Ignore file and match rest",  () => {
         isBinaryFileSync.mockReturnValue(false);
         fs.writeFileSync(filePath, "");
-        fs.writeFileSync(`${repoPath}/ignore.js`, DUMMY_FILE_CONTENT);
+        fs.writeFileSync(path.join(repoPath, "ignore.js"), DUMMY_FILE_CONTENT);
         fs.writeFileSync(syncIgnorePath, SYNC_IGNORE_DATA+"\nignore.js");
         const initUtilsObj = new initUtils(repoPath);
         const paths = initUtilsObj.getSyncablePaths(USER_PLAN);
@@ -176,7 +190,7 @@ describe("getSyncablePaths",  () => {
 
     test("Size increases the limit",  () => {
         fs.writeFileSync(filePath, "");
-        fs.writeFileSync(`${repoPath}/ignore.js`, "DUMMY FILE CONTENT");
+        fs.writeFileSync(path.join(repoPath, "ignore.js"), "DUMMY FILE CONTENT");
         fs.writeFileSync(syncIgnorePath, SYNC_IGNORE_DATA+"\nignore.js");
         const userPlan = Object.assign({}, USER_PLAN);
         userPlan.SIZE = 0;
@@ -189,13 +203,16 @@ describe("getSyncablePaths",  () => {
 describe("copyFilesTo",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const filePath = `${repoPath}/file.js`;
-    const shadowRepo = `${baseRepoPath}/.shadow/${repoPath}`;
+    const filePath = path.join(repoPath, "file.js");
+    untildify.mockReturnValue(baseRepoPath);
+
+    const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
+    const shadowRepo = pathUtilsObj.getShadowRepoPath();
 
     beforeEach(() => {
-        fs.mkdirSync(repoPath, {recursive: true});
+        mkDir(repoPath);
         fs.writeFileSync(filePath, DUMMY_FILE_CONTENT);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
+        mkDir(baseRepoPath);
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
     });
@@ -208,20 +225,20 @@ describe("copyFilesTo",  () => {
     test("Copy to Shadow repo",  () => {
         const initUtilsObj = new initUtils(repoPath);
         initUtilsObj.copyFilesTo([filePath], shadowRepo);
-        expect(fs.existsSync(`${shadowRepo}/file.js`)).toBe(true);
+        expect(fs.existsSync(path.join(shadowRepo, "file.js"))).toBe(true);
     });
 
     test("Copy non-existing file",  () => {
         fs.rmSync(filePath);
         const initUtilsObj = new initUtils(repoPath);
         initUtilsObj.copyFilesTo([filePath], shadowRepo);
-        expect(fs.existsSync(`${shadowRepo}/file.js`)).toBe(false);
+        expect(fs.existsSync(path.join(shadowRepo, "file.js"))).toBe(false);
     });
 });
 
 describe("saveIamUser",  () => {
     const baseRepoPath = randomBaseRepoPath();
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userFileData = {};
     userFileData[TEST_USER.email] = {
         access_key: TEST_USER.iam_access_key,
@@ -229,13 +246,13 @@ describe("saveIamUser",  () => {
     };
 
     beforeEach(() => {
-        fs.mkdirSync(baseRepoPath, {recursive: true});
+        mkDir(baseRepoPath);
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        rmDir(baseRepoPath);
     });
 
     test("With no user.yml",  () => {
@@ -262,18 +279,18 @@ describe("saveIamUser",  () => {
 
 describe("saveSequenceTokenFile",  () => {
     const baseRepoPath = randomBaseRepoPath();
-    const sequenceTokenFilePath = `${baseRepoPath}/sequence_token.yml`;
+    const sequenceTokenFilePath = getSeqTokenFilePath(baseRepoPath);
     const sequenceTokenFileData = {};
     sequenceTokenFileData[TEST_EMAIL] = "";
 
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
+        mkDir(baseRepoPath);
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, {recursive: true});
+        rmDir(baseRepoPath);
     });
 
     test("With no sequence_token.yml",  () => {
@@ -297,15 +314,15 @@ describe("saveSequenceTokenFile",  () => {
 describe("saveFileIds",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
     configData.repos[repoPath] = {branches: {}};
 
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
-        fs.mkdirSync(repoPath, {recursive: true});
+        mkDir(baseRepoPath);
+        mkDir(repoPath);
         fs.writeFileSync(configPath, yaml.safeDump(configData));
     });
 
@@ -325,23 +342,23 @@ describe("saveFileIds",  () => {
 describe("uploadRepo",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const syncIgnorePath = `${repoPath}/.syncignore`;
-    const filePath = `${repoPath}/file.js`;
-    const configPath = `${baseRepoPath}/config.yml`;
-    const userFilePath = `${baseRepoPath}/user.yml`;
-    const sequenceTokenFilePath = `${baseRepoPath}/sequence_token.yml`;
+    const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
+    const filePath = path.join(repoPath, "file.js");
+    const configPath = getConfigFilePath(baseRepoPath);
+    const userFilePath = getUserFilePath(baseRepoPath);
+    const sequenceTokenFilePath = getSeqTokenFilePath(baseRepoPath);
     const configData = {repos: {}};
 
     beforeEach(() => {
         fetch.resetMocks();
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
-        fs.mkdirSync(repoPath, {recursive: true});
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
-        fs.writeFileSync(syncIgnorePath, SYNC_IGNORE_DATA+"\nignore.js");
-        fs.writeFileSync(filePath, DUMMY_FILE_CONTENT);
-        fs.writeFileSync(`${repoPath}/ignore.js`, DUMMY_FILE_CONTENT);
+        mkDir(baseRepoPath);
+        mkDir(repoPath);
+        writeFile(configPath, yaml.safeDump(configData));
+        writeFile(syncIgnorePath, SYNC_IGNORE_DATA+"\nignore.js");
+        writeFile(filePath, DUMMY_FILE_CONTENT);
+        writeFile(path.join(repoPath, "ignore.js"), DUMMY_FILE_CONTENT);
     });
 
     afterEach(() => {
@@ -352,7 +369,7 @@ describe("uploadRepo",  () => {
     test("Server Down",  async () => {
         // Add repo in config
         configData.repos[repoPath] = {branches: {}};
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        writeFile(configPath, yaml.safeDump(configData));
         // Generate ItemPaths
         const initUtilsObj = new initUtils(repoPath);
         const itemPaths = initUtilsObj.getSyncablePaths(USER_PLAN);
@@ -376,7 +393,7 @@ describe("uploadRepo",  () => {
     test("repo In Config",  async () => {
         // Add repo in config
         configData.repos[repoPath] = {branches: {}};
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        writeFile(configPath, yaml.safeDump(configData));
         // Generate ItemPaths
         const initUtilsObj = new initUtils(repoPath);
         const itemPaths = initUtilsObj.getSyncablePaths(USER_PLAN);
@@ -406,7 +423,7 @@ describe("uploadRepo",  () => {
 
     test("repo Not In Config",  async () => {
         const configData = {repos: {}};
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        writeFile(configPath, yaml.safeDump(configData));
         const initUtilsObj = new initUtils(repoPath);
         const itemPaths = initUtilsObj.getSyncablePaths(USER_PLAN);
         // 1 is .syncignore, other is file.js
@@ -436,8 +453,8 @@ describe("uploadRepo",  () => {
 
     test("Error in uploadRepoToServer",  async () => {
         // Write these files as putLogEvent is called when error occurs
-        fs.writeFileSync(userFilePath, yaml.safeDump({}));
-        fs.writeFileSync(sequenceTokenFilePath, yaml.safeDump({}));
+        writeFile(userFilePath, yaml.safeDump({}));
+        writeFile(sequenceTokenFilePath, yaml.safeDump({}));
 
         const initUtilsObj = new initUtils(repoPath);
         const itemPaths = initUtilsObj.getSyncablePaths(USER_PLAN);

@@ -2,9 +2,16 @@ import fs from "fs";
 import yaml from "js-yaml";
 import untildify from "untildify";
 
-import {buildAtomEnv, randomBaseRepoPath, randomRepoPath} from "../../helpers/helpers";
-import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../../lib/utils/setup_utils";
+import {
+    buildAtomEnv,
+    getConfigFilePath,
+    getUserFilePath,
+    randomBaseRepoPath,
+    randomRepoPath,
+    rmDir, mkDir, writeFile
+} from "../../helpers/helpers";
 import {getRepoInSyncMsg, NOTIFICATION} from "../../../lib/constants";
+import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../../lib/utils/setup_utils";
 
 
 describe("createSystemDirectories",  () => {
@@ -13,11 +20,10 @@ describe("createSystemDirectories",  () => {
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, { recursive: true });
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, { recursive: true });
+        rmDir(baseRepoPath);
     });
 
     test('createSystemDirectories',  () => {
@@ -35,10 +41,10 @@ describe("createSystemDirectories",  () => {
 describe("setupCodeSync",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {"dummy_email": {access_token: "ABC"}};
 
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
     configData.repos[repoPath] = {branches: {}};
 
@@ -46,13 +52,13 @@ describe("setupCodeSync",  () => {
         jest.clearAllMocks();
         buildAtomEnv();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
-        fs.mkdirSync(repoPath, {recursive: true});
+        mkDir(baseRepoPath);
+        mkDir(repoPath);
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, {recursive: true});
-        fs.rmSync(repoPath, { recursive: true, force: true });
+        rmDir(repoPath);
+        rmDir(baseRepoPath);
     });
 
     test('with no user.yml', async () => {
@@ -76,7 +82,7 @@ describe("setupCodeSync",  () => {
     });
 
     test('with empty user.yml', async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump({}));
+        writeFile(userFilePath, yaml.safeDump({}));
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
@@ -90,7 +96,7 @@ describe("setupCodeSync",  () => {
     });
 
     test('with user and repo not synced', async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        writeFile(userFilePath, yaml.safeDump(userData));
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
@@ -105,8 +111,8 @@ describe("setupCodeSync",  () => {
     });
 
     test('with synced repo',  async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        writeFile(userFilePath, yaml.safeDump(userData));
+        writeFile(configPath, yaml.safeDump(configData));
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeFalsy();
@@ -123,7 +129,7 @@ describe("setupCodeSync",  () => {
 
     test('showConnectRepoView',  async () => {
         global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
-        fs.writeFileSync(configPath, yaml.safeDump({repos: {}}));
+        writeFile(configPath, yaml.safeDump({repos: {}}));
         const shouldShowConnectRepoView = showConnectRepoView();
         expect(shouldShowConnectRepoView).toBe(true);
     });
@@ -132,17 +138,17 @@ describe("setupCodeSync",  () => {
 
 describe("showLogin",  () => {
     const baseRepoPath = randomBaseRepoPath();
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {"dummy_email": {access_token: "ABC"}};
 
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, { recursive: true });
+        mkDir(baseRepoPath);
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, { recursive: true });
+        rmDir(baseRepoPath);
     });
 
     test('with no user.yml',   () => {
@@ -151,14 +157,14 @@ describe("showLogin",  () => {
     });
 
     test('with empty user.yml',  async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump({}));
+        writeFile(userFilePath, yaml.safeDump({}));
         const shouldShowLogin = showLogIn();
         expect(shouldShowLogin).toBe(true);
         fs.rmSync(userFilePath);
     });
 
     test('with user',  async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        writeFile(userFilePath, yaml.safeDump(userData));
         const shouldShowLogin = showLogIn();
         expect(shouldShowLogin).toBe(false);
         fs.rmSync(userFilePath);

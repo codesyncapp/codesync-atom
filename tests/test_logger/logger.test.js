@@ -1,18 +1,17 @@
 import fs from "fs";
 import yaml from "js-yaml";
-
-import untildify from "untildify";
-import {randomBaseRepoPath, TEST_EMAIL, TEST_USER} from "../helpers/helpers";
-import {AWS_REGION} from "../../lib/constants";
-import {putLogEvent, updateSequenceToken} from "../../lib/logger";
-import {readYML} from "../../lib/utils/common";
 import AWS from "aws-sdk";
+import untildify from "untildify";
+import {AWS_REGION} from "../../lib/constants";
+import {readYML} from "../../lib/utils/common";
+import {putLogEvent, updateSequenceToken} from "../../lib/logger";
+import {getSeqTokenFilePath, getUserFilePath, randomBaseRepoPath, TEST_EMAIL, TEST_USER} from "../helpers/helpers";
 
 
 describe("putLogEvent",  () => {
     const baseRepoPath = randomBaseRepoPath();
-    const userFilePath = `${baseRepoPath}/user.yml`;
-    const sequenceTokenFilePath = `${baseRepoPath}/sequence_token.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
+    const sequenceTokenFilePath = getSeqTokenFilePath(baseRepoPath);
 
     beforeEach(() => {
         fetch.resetMocks();

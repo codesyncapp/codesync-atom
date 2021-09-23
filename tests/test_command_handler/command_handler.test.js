@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import yaml from "js-yaml";
 import untildify from "untildify";
 import fetchMock from "jest-fetch-mock";
@@ -12,7 +13,7 @@ import {
     unSyncHandler
 } from "../../lib/handlers/commands_handler";
 import {
-    buildAtomEnv,
+    buildAtomEnv, getConfigFilePath, getUserFilePath,
     randomBaseRepoPath,
     randomRepoPath,
     TEST_EMAIL
@@ -38,9 +39,9 @@ describe("SignUpHandler", () => {
 describe("SyncHandler", () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {};
     userData[TEST_EMAIL] = {access_token: "ABC"};
 
@@ -96,9 +97,9 @@ describe("SyncHandler", () => {
 describe("unSyncHandler", () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {};
     userData[TEST_EMAIL] = {access_token: "ABC"};
 
@@ -142,9 +143,9 @@ describe("unSyncHandler", () => {
 describe("postSelectionUnsync", () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {};
     userData[TEST_EMAIL] = {access_token: "ABC"};
 
@@ -217,9 +218,9 @@ describe("postSelectionUnsync", () => {
 describe("trackRepoHandler", () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {};
     userData[TEST_EMAIL] = {access_token: "ABC"};
 
@@ -260,9 +261,9 @@ describe("trackRepoHandler", () => {
 describe("trackFileHandler", () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const configPath = `${baseRepoPath}/config.yml`;
+    const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
-    const userFilePath = `${baseRepoPath}/user.yml`;
+    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {};
     userData[TEST_EMAIL] = {access_token: "ABC"};
 
@@ -312,7 +313,7 @@ describe("trackFileHandler", () => {
         global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
         global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
             getPath: jest.fn(() => {
-                return `${repoPath}/file.js`;
+                return path.join(repoPath, "file.js");
             })
         });
         getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
@@ -333,7 +334,7 @@ describe("trackFileHandler", () => {
         global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
         global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
             getPath: jest.fn(() => {
-                return `${repoPath}/file.js`;
+                return path.join(repoPath, "file.js");
             })
         });
         getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
