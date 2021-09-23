@@ -130,26 +130,26 @@ export function randomRepoPath() {
 }
 
 export function getConfigFilePath(baseRepoPath) {
-    const formattedPath = formatPath(baseRepoPath);
-    untildify.mockReturnValue(formattedPath);
-    return path.join(formattedPath, "config.yml");
+    // const formattedPath = formatPath(baseRepoPath);
+    // untildify.mockReturnValue(formattedPath);
+    return path.join(baseRepoPath, "config.yml");
 }
 
 export function getUserFilePath(baseRepoPath) {
-    const formattedPath = formatPath(baseRepoPath);
-    untildify.mockReturnValue(formattedPath);
-    return path.join(formattedPath, "user.yml");
+    // const formattedPath = formatPath(baseRepoPath);
+    // untildify.mockReturnValue(formattedPath);
+    return path.join(baseRepoPath, "user.yml");
 }
 
 export function getSeqTokenFilePath(baseRepoPath) {
-    const formattedPath = formatPath(baseRepoPath);
-    untildify.mockReturnValue(formattedPath);
-    return path.join(formattedPath, "sequence_token.yml");
+    // const formattedPath = formatPath(baseRepoPath);
+    // untildify.mockReturnValue(formattedPath);
+    return path.join(baseRepoPath, "sequence_token.yml");
 }
 
 export function getSyncIgnoreFilePath(repoPath) {
-    const formattedPath = formatPath(repoPath);
-    return path.join(formattedPath, ".syncignore");
+    // const formattedPath = formatPath(repoPath);
+    return path.join(repoPath, ".syncignore");
 }
 
 export function mkDir(dirPath) {
