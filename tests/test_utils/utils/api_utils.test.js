@@ -3,7 +3,13 @@ import yaml from "js-yaml";
 import untildify from "untildify";
 import fetchMock from "jest-fetch-mock";
 import {checkServerDown, createUserWithApi, getUserForToken} from "../../../lib/utils/api_utils";
-import {getSeqTokenFilePath, getUserFilePath, INVALID_TOKEN_JSON, randomBaseRepoPath} from "../../helpers/helpers";
+import {
+    getSeqTokenFilePath,
+    getUserFilePath,
+    INVALID_TOKEN_JSON,
+    mkDir,
+    randomBaseRepoPath
+} from "../../helpers/helpers";
 
 
 describe('checkServerDown', () => {
@@ -15,7 +21,7 @@ describe('checkServerDown', () => {
         fetch.resetMocks();
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
+        mkDir(baseRepoPath);
         fs.writeFileSync(userFilePath, yaml.safeDump({}));
         fs.writeFileSync(sequenceTokenFilePath, yaml.safeDump({}));
 

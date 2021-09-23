@@ -3,17 +3,17 @@ import path from "path";
 import untildify from "untildify";
 import {readYML} from "../../../../lib/utils/common";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../../lib/constants";
-import {randomBaseRepoPath, randomRepoPath, waitFor} from "../../../helpers/helpers";
+import {mkDir, randomBaseRepoPath, randomRepoPath, rmDir, waitFor, writeFile} from "../../../helpers/helpers";
 import {handleDirectoryDeleteDiffs} from "../../../../lib/events/diff_utils";
-import {pathUtils} from "../../../../lib/utils/path_utils";
+import {pathUtils, formatPath} from "../../../../lib/utils/path_utils";
 
 
 describe("handleDirectoryDeleteDiffs", () => {
 
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const cacheRepoPath = path.join(baseRepoPath, ".deleted");
-    const diffsRepo = path.join(baseRepoPath, ".diffs", ".atom");
+    const cacheRepoPath = path.join(formatPath(baseRepoPath), ".deleted");
+    const diffsRepo = path.join(formatPath(baseRepoPath), ".diffs", ".atom");
 
     untildify.mockReturnValue(baseRepoPath);
 
@@ -28,16 +28,16 @@ describe("handleDirectoryDeleteDiffs", () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        fs.mkdirSync(repoPath, { recursive: true });
-        fs.mkdirSync(diffsRepo, { recursive: true });
-        fs.mkdirSync(cacheRepoPath, { recursive: true });
-        fs.mkdirSync(shadowDirectoryPath, { recursive: true });
-        fs.writeFileSync(shadowFilePath, "use babel;");
+        mkDir(repoPath);
+        mkDir(diffsRepo);
+        mkDir(cacheRepoPath);
+        mkDir(shadowDirectoryPath);
+        writeFile(shadowFilePath, "use babel;");
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, { recursive: true });
-        fs.rmdirSync(repoPath, { recursive: true });
+        rmDir(baseRepoPath);
+        rmDir(repoPath);
     });
 
     test("NOT in .deleted",  async () => {
@@ -60,7 +60,7 @@ describe("handleDirectoryDeleteDiffs", () => {
         // Verify file has been renamed in the shadow repo
         expect(fs.existsSync(cacheFilePath)).toBe(true);
         // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
+        let diffFiles = fs.readdirSync(formatPath(diffsRepo));
         expect(diffFiles).toHaveLength(1);
         const diffFilePath = path.join(diffsRepo, diffFiles[0]);
         const diffData = readYML(diffFilePath);
@@ -82,7 +82,7 @@ describe("handleDirectoryDeleteDiffs", () => {
         await handleDirectoryDeleteDiffs(repoPath, DEFAULT_BRANCH, "directory");
         await waitFor(1);
         // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
+        let diffFiles = fs.readdirSync(formatPath(diffsRepo));
         expect(diffFiles).toHaveLength(0);
     });
 

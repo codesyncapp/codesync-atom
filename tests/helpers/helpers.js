@@ -1,5 +1,9 @@
-import {DIFF_SOURCE} from "../../lib/constants";
+import fs from "fs";
 import path from "path";
+import untildify from "untildify";
+
+import {DIFF_SOURCE} from "../../lib/constants";
+import { formatPath } from "../../lib/utils/path_utils";
 
 export function getRandomString(length) {
     var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -33,8 +37,7 @@ export function randomRepoPath() {
     const posixPath = path.join("tests", "tests_data", randomRepoName());
     const windowPath = path.join("tests", "tests_data", "C:", randomRepoName());
     const paths = [posixPath, windowPath];
-    // return paths[Math.floor(Math.random() * paths.length)];
-    return windowPath;
+    return paths[Math.floor(Math.random() * paths.length)];
 }
 
 export async function waitFor(seconds) {
@@ -121,17 +124,39 @@ export const DIFF_DATA = {
 };
 
 export function getConfigFilePath(baseRepoPath) {
-    return path.join(baseRepoPath, "config.yml");
+    const formattedPath = formatPath(baseRepoPath);
+    untildify.mockReturnValue(formattedPath);
+    return path.join(formattedPath, "config.yml");
 }
 
 export function getUserFilePath(baseRepoPath) {
-    return path.join(baseRepoPath, "user.yml");
+    const formattedPath = formatPath(baseRepoPath);
+    untildify.mockReturnValue(formattedPath);
+    return path.join(formattedPath, "user.yml");
 }
 
 export function getSeqTokenFilePath(baseRepoPath) {
-    return path.join(baseRepoPath, "sequence_token.yml");
+    const formattedPath = formatPath(baseRepoPath);
+    untildify.mockReturnValue(formattedPath);
+    return path.join(formattedPath, "sequence_token.yml");
 }
 
 export function getSyncIgnoreFilePath(repoPath) {
-    return path.join(repoPath, ".syncignore");
+    const formattedPath = formatPath(repoPath);
+    return path.join(formattedPath, ".syncignore");
+}
+
+export function mkDir(dirPath) {
+    const formattedPath = formatPath(dirPath);
+    fs.mkdirSync(formattedPath, {recursive: true});
+}
+
+export function rmDir(dirPath) {
+    const formattedPath = formatPath(dirPath);
+    fs.rmdirSync(formattedPath, { recursive: true });
+}
+
+export function writeFile(filePath, data) {
+    const formattedPath = formatPath(filePath);
+    fs.writeFileSync(formattedPath, data);
 }

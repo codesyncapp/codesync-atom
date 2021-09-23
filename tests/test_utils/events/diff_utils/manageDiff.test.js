@@ -1,12 +1,13 @@
 import fs from "fs";
 import path from "path";
 import untildify from "untildify";
-import {DATETIME_FORMAT, DEFAULT_BRANCH} from "../../../../lib/constants";
-import {randomBaseRepoPath, randomRepoPath} from "../../../helpers/helpers";
-import {manageDiff} from "../../../../lib/events/diff_utils";
 import dateFormat from "dateformat";
+import {DATETIME_FORMAT, DEFAULT_BRANCH} from "../../../../lib/constants";
+import {mkDir, randomBaseRepoPath, randomRepoPath, rmDir} from "../../../helpers/helpers";
+import {manageDiff} from "../../../../lib/events/diff_utils";
 import {readYML} from "../../../../lib/utils/common";
 import {DIFF_SOURCE} from "../../../../lib/constants";
+import {formatPath} from "../../../../lib/utils/path_utils";
 
 
 describe("manageDiff", () => {
@@ -18,23 +19,22 @@ describe("manageDiff", () => {
 
     beforeEach(() => {
         // Create directories
-        fs.mkdirSync(repoPath, { recursive: true });
-        fs.mkdirSync(diffsRepo, { recursive: true });
+        mkDir(repoPath);
+        mkDir(diffsRepo);
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-
     });
 
     afterEach(() => {
-        fs.rmSync(repoPath, { recursive: true, force: true });
-        fs.rmSync(baseRepoPath, { recursive: true, force: true });
+        rmDir(repoPath);
+        rmDir(baseRepoPath);
     });
 
     test("should be skipped",() => {
         manageDiff(repoPath, DEFAULT_BRANCH, newFilePath, "", false, false,
             false, "");
         // Verify no diff file should be generated
-        let diffFiles = fs.readdirSync(diffsRepo);
+        const diffFiles = fs.readdirSync(formatPath(diffsRepo));
         expect(diffFiles).toHaveLength(0);
     });
 
@@ -43,7 +43,7 @@ describe("manageDiff", () => {
         manageDiff(repoPath, DEFAULT_BRANCH, newFilePath, "diff", false,
             false, false, createdAt);
         // Verify no diff file should be generated
-        let diffFiles = fs.readdirSync(diffsRepo);
+        const diffFiles = fs.readdirSync(formatPath(diffsRepo));
         expect(diffFiles).toHaveLength(1);
         const diffFilePath = path.join(diffsRepo, diffFiles[0]);
         const diffData = readYML(diffFilePath);

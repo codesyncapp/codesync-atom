@@ -7,10 +7,12 @@ import {
     getConfigFilePath,
     getUserFilePath,
     randomBaseRepoPath,
-    randomRepoPath
+    randomRepoPath,
+    rmDir, mkDir, writeFile
 } from "../../helpers/helpers";
 import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../../lib/utils/setup_utils";
 import {getRepoInSyncMsg, NOTIFICATION} from "../../../lib/constants";
+import {formatPath} from "../../../lib/utils/path_utils";
 
 
 describe("createSystemDirectories",  () => {
@@ -19,16 +21,15 @@ describe("createSystemDirectories",  () => {
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, { recursive: true });
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, { recursive: true });
+        rmDir(baseRepoPath);
     });
 
     test('createSystemDirectories',  () => {
         createSystemDirectories();
-        const lsResult = fs.readdirSync(baseRepoPath);
+        const lsResult = fs.readdirSync(formatPath(baseRepoPath));
         expect(lsResult.includes(".diffs")).toBe(true);
         expect(lsResult.includes(".originals")).toBe(true);
         expect(lsResult.includes(".shadow")).toBe(true);
@@ -52,18 +53,18 @@ describe("setupCodeSync",  () => {
         jest.clearAllMocks();
         buildAtomEnv();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, {recursive: true});
-        fs.mkdirSync(repoPath, {recursive: true});
+        mkDir(baseRepoPath);
+        mkDir(repoPath);
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, {recursive: true});
-        fs.rmSync(repoPath, { recursive: true, force: true });
+        rmDir(repoPath);
+        rmDir(baseRepoPath);
     });
 
     test('with no user.yml', async () => {
         const port = await setupCodeSync(repoPath);
-        const lsResult = fs.readdirSync(baseRepoPath);
+        const lsResult = fs.readdirSync(formatPath(baseRepoPath));
         expect(lsResult.includes(".diffs")).toBe(true);
         expect(lsResult.includes(".originals")).toBe(true);
         expect(lsResult.includes(".shadow")).toBe(true);
@@ -82,7 +83,7 @@ describe("setupCodeSync",  () => {
     });
 
     test('with empty user.yml', async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump({}));
+        writeFile(userFilePath, yaml.safeDump({}));
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
@@ -96,7 +97,7 @@ describe("setupCodeSync",  () => {
     });
 
     test('with user and repo not synced', async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        writeFile(userFilePath, yaml.safeDump(userData));
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
@@ -111,8 +112,8 @@ describe("setupCodeSync",  () => {
     });
 
     test('with synced repo',  async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        writeFile(userFilePath, yaml.safeDump(userData));
+        writeFile(configPath, yaml.safeDump(configData));
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeFalsy();
@@ -129,7 +130,7 @@ describe("setupCodeSync",  () => {
 
     test('showConnectRepoView',  async () => {
         global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
-        fs.writeFileSync(configPath, yaml.safeDump({repos: {}}));
+        writeFile(configPath, yaml.safeDump({repos: {}}));
         const shouldShowConnectRepoView = showConnectRepoView();
         expect(shouldShowConnectRepoView).toBe(true);
     });
@@ -144,11 +145,11 @@ describe("showLogin",  () => {
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath, { recursive: true });
+        mkDir(baseRepoPath);
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, { recursive: true });
+        rmDir(baseRepoPath);
     });
 
     test('with no user.yml',   () => {
@@ -157,14 +158,14 @@ describe("showLogin",  () => {
     });
 
     test('with empty user.yml',  async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump({}));
+        writeFile(userFilePath, yaml.safeDump({}));
         const shouldShowLogin = showLogIn();
         expect(shouldShowLogin).toBe(true);
         fs.rmSync(userFilePath);
     });
 
     test('with user',  async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        writeFile(userFilePath, yaml.safeDump(userData));
         const shouldShowLogin = showLogIn();
         expect(shouldShowLogin).toBe(false);
         fs.rmSync(userFilePath);
