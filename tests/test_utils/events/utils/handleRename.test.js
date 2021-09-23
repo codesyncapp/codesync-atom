@@ -15,10 +15,9 @@ describe("handleRename",  () => {
 
     untildify.mockReturnValue(baseRepoPath);
 
-    const diffsRepo = path.join(baseRepoPath, ".diffs", ".atom");
     const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
     const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
-
+    const diffsRepo = pathUtilsObj.getDiffsRepo();
     // For file rename
     const oldFilePath = path.join(repoPath, "old.js");
     const newFilePath = path.join(repoPath, "new.js");

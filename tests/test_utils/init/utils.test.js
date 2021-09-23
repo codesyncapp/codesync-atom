@@ -21,7 +21,8 @@ import {
     getSeqTokenFilePath,
     getSyncIgnoreFilePath,
     mkDir,
-    writeFile
+    writeFile,
+    rmDir
 } from "../../helpers/helpers";
 import {readYML} from "../../../lib/utils/common";
 import fetchMock from "jest-fetch-mock";
@@ -247,7 +248,7 @@ describe("saveIamUser",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath);
+        rmDir(baseRepoPath);
     });
 
     test("With no user.yml",  () => {
@@ -285,7 +286,7 @@ describe("saveSequenceTokenFile",  () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath);
+        rmDir(baseRepoPath);
     });
 
     test("With no sequence_token.yml",  () => {

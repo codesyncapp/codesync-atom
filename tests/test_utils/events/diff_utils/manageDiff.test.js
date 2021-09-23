@@ -7,14 +7,18 @@ import {mkDir, randomBaseRepoPath, randomRepoPath, rmDir} from "../../../helpers
 import {manageDiff} from "../../../../lib/events/diff_utils";
 import {readYML} from "../../../../lib/utils/common";
 import {DIFF_SOURCE} from "../../../../lib/constants";
-import {formatPath} from "../../../../lib/utils/path_utils";
+import {pathUtils} from "../../../../lib/utils/path_utils";
 
 
 describe("manageDiff", () => {
 
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const diffsRepo = path.join(formatPath(baseRepoPath), ".diffs", ".atom");
+
+    untildify.mockReturnValue(baseRepoPath);
+
+    const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
+    const diffsRepo = pathUtilsObj.getDiffsRepo();
     const newFilePath = path.join(repoPath, "new.js");
 
     beforeEach(() => {

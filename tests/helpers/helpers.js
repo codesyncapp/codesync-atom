@@ -5,41 +5,6 @@ import untildify from "untildify";
 import {DIFF_SOURCE} from "../../lib/constants";
 import { formatPath } from "../../lib/utils/path_utils";
 
-export function getRandomString(length) {
-    var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    var result = '';
-    for ( let i = 0; i < length; i++ ) {
-        result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
-    }
-    return result;
-}
-
-export function randomName() {
-    return getRandomString(10);
-}
-
-function randomBaseRepoName() {
-    return `.codesync_${randomName()}`;
-}
-
-function randomRepoName() {
-    return `test_repo_${randomName()}`;
-}
-
-export function randomBaseRepoPath() {
-    const posixPath = path.join("tests", "tests_data", randomBaseRepoName());
-    const windowPath = path.join("tests", "tests_data", "C:", randomBaseRepoName());
-    const paths = [posixPath, windowPath];
-    return paths[Math.floor(Math.random() * paths.length)];
-}
-
-export function randomRepoPath() {
-    const posixPath = path.join("tests", "tests_data", randomRepoName());
-    const windowPath = path.join("tests", "tests_data", "C:", randomRepoName());
-    const paths = [posixPath, windowPath];
-    return paths[Math.floor(Math.random() * paths.length)];
-}
-
 export async function waitFor(seconds) {
     return await new Promise((r) => setTimeout(r, seconds*1000));
 }
@@ -123,6 +88,47 @@ export const DIFF_DATA = {
     source: DIFF_SOURCE
 };
 
+export function getRandomString(length) {
+    var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    var result = '';
+    for ( let i = 0; i < length; i++ ) {
+        result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+    }
+    return result;
+}
+
+export function randomName() {
+    return getRandomString(10);
+}
+
+function randomBaseRepoName() {
+    return `.codesync_${randomName()}`;
+}
+
+function randomRepoName() {
+    return `test_repo_${randomName()}`;
+}
+
+export function randomBaseRepoPath() {
+    // const posixPath = path.join("tests", "tests_data", randomBaseRepoName());
+    // const windowPath = path.join("tests", "tests_data", "C:", randomBaseRepoName());
+    // const paths = [posixPath, windowPath];
+    // return paths[Math.floor(Math.random() * paths.length)];
+    // return windowPath;
+    // return posixPath;
+    return path.join(__dirname, "..", "tests_data", randomBaseRepoName());
+}
+
+export function randomRepoPath() {
+    // const posixPath = path.join("tests", "tests_data", randomRepoName());
+    // const windowPath = path.join(__dirname, "tests_data", randomRepoName());
+    // const paths = [posixPath, windowPath];
+    // return paths[Math.floor(Math.random() * paths.length)];
+    // return path.join(__dirname, "..", "tests_data", randomRepoName());
+    // return posixPath;
+    return path.join(__dirname, "..", "tests_data", randomRepoName());
+}
+
 export function getConfigFilePath(baseRepoPath) {
     const formattedPath = formatPath(baseRepoPath);
     untildify.mockReturnValue(formattedPath);
@@ -147,13 +153,11 @@ export function getSyncIgnoreFilePath(repoPath) {
 }
 
 export function mkDir(dirPath) {
-    const formattedPath = formatPath(dirPath);
-    fs.mkdirSync(formattedPath, {recursive: true});
+    fs.mkdirSync(dirPath, {recursive: true});
 }
 
 export function rmDir(dirPath) {
-    const formattedPath = formatPath(dirPath);
-    fs.rmSync(formattedPath, { recursive: true, force: true });
+    fs.rmSync(dirPath, { recursive: true, force: true });
 }
 
 export function writeFile(filePath, data) {

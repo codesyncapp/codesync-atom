@@ -3,23 +3,23 @@ import path from "path";
 import untildify from "untildify";
 import {readYML} from "../../../../lib/utils/common";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../../lib/constants";
-import {mkDir, randomBaseRepoPath, randomRepoPath, rmDir, waitFor, writeFile} from "../../../helpers/helpers";
 import {handleDirectoryDeleteDiffs} from "../../../../lib/events/diff_utils";
-import {pathUtils, formatPath} from "../../../../lib/utils/path_utils";
+import {pathUtils} from "../../../../lib/utils/path_utils";
+import {mkDir, randomBaseRepoPath, randomRepoPath, rmDir, waitFor, writeFile} from "../../../helpers/helpers";
 
 
 describe("handleDirectoryDeleteDiffs", () => {
 
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const cacheRepoPath = path.join(formatPath(baseRepoPath), ".deleted");
-    const diffsRepo = path.join(formatPath(baseRepoPath), ".diffs", ".atom");
 
     untildify.mockReturnValue(baseRepoPath);
 
     const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
     const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
+    const cacheRepoPath = pathUtilsObj.getDeletedRepoPath();
     const cacheRepoBranchPath = pathUtilsObj.getDeletedRepoBranchPath();
+    const diffsRepo = pathUtilsObj.getDiffsRepo();
 
     const shadowDirectoryPath = path.join(shadowRepoBranchPath, "directory");
     const shadowFilePath = path.join(shadowDirectoryPath, "file.js");
@@ -28,7 +28,7 @@ describe("handleDirectoryDeleteDiffs", () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        untildify.mockReturnValue(baseRepoPath);
+        untildify.mockReturnValueOnce(baseRepoPath);
         mkDir(repoPath);
         mkDir(diffsRepo);
         mkDir(cacheRepoPath);
@@ -41,7 +41,7 @@ describe("handleDirectoryDeleteDiffs", () => {
         rmDir(repoPath);
     });
 
-    test("NOT in .deleted",  async () => {
+    test("Deleted file NOT in .deleted",  async () => {
         /*
          *
          {
@@ -57,10 +57,10 @@ describe("handleDirectoryDeleteDiffs", () => {
         * */
         await handleDirectoryDeleteDiffs(repoPath, DEFAULT_BRANCH, "directory");
         await waitFor(1);
-        // Verify file has been renamed in the shadow repo
+        // Verify file cache file has been created in .deleted
         expect(fs.existsSync(cacheFilePath)).toBe(true);
         // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(formatPath(diffsRepo));
+        let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(1);
         const diffFilePath = path.join(diffsRepo, diffFiles[0]);
         const diffData = readYML(diffFilePath);
@@ -76,12 +76,12 @@ describe("handleDirectoryDeleteDiffs", () => {
     });
 
     test("with file already in .deleted",  async () => {
-        fs.mkdirSync(path.join(cacheRepoBranchPath, "directory"), { recursive: true });
-        fs.writeFileSync(cacheFilePath, "use babel;");
+        mkDir(path.join(cacheRepoBranchPath, "directory"));
+        writeFile(cacheFilePath, "use babel;");
         await handleDirectoryDeleteDiffs(repoPath, DEFAULT_BRANCH, "directory");
         await waitFor(1);
         // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(formatPath(diffsRepo));
+        let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
     });
 
