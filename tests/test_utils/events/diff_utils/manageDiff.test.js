@@ -14,15 +14,15 @@ describe("manageDiff", () => {
 
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const diffsRepo = path.join(baseRepoPath, ".diffs", ".atom");
+    const diffsRepo = path.join(formatPath(baseRepoPath), ".diffs", ".atom");
     const newFilePath = path.join(repoPath, "new.js");
 
     beforeEach(() => {
+        jest.clearAllMocks();
+        untildify.mockReturnValue(baseRepoPath);
         // Create directories
         mkDir(repoPath);
         mkDir(diffsRepo);
-        jest.clearAllMocks();
-        untildify.mockReturnValue(baseRepoPath);
     });
 
     afterEach(() => {
@@ -34,7 +34,7 @@ describe("manageDiff", () => {
         manageDiff(repoPath, DEFAULT_BRANCH, newFilePath, "", false, false,
             false, "");
         // Verify no diff file should be generated
-        const diffFiles = fs.readdirSync(formatPath(diffsRepo));
+        const diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
     });
 
@@ -43,7 +43,7 @@ describe("manageDiff", () => {
         manageDiff(repoPath, DEFAULT_BRANCH, newFilePath, "diff", false,
             false, false, createdAt);
         // Verify no diff file should be generated
-        const diffFiles = fs.readdirSync(formatPath(diffsRepo));
+        const diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(1);
         const diffFilePath = path.join(diffsRepo, diffFiles[0]);
         const diffData = readYML(diffFilePath);

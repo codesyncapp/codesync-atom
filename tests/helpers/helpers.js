@@ -153,7 +153,7 @@ export function mkDir(dirPath) {
 
 export function rmDir(dirPath) {
     const formattedPath = formatPath(dirPath);
-    fs.rmdirSync(formattedPath, { recursive: true });
+    fs.rmSync(formattedPath, { recursive: true, force: true });
 }
 
 export function writeFile(filePath, data) {

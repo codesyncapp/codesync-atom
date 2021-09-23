@@ -28,6 +28,7 @@ describe("handleDirectoryDeleteDiffs", () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        untildify.mockReturnValue(baseRepoPath);
         mkDir(repoPath);
         mkDir(diffsRepo);
         mkDir(cacheRepoPath);
@@ -54,7 +55,6 @@ describe("handleDirectoryDeleteDiffs", () => {
           }
         *
         * */
-        untildify.mockReturnValue(baseRepoPath);
         await handleDirectoryDeleteDiffs(repoPath, DEFAULT_BRANCH, "directory");
         await waitFor(1);
         // Verify file has been renamed in the shadow repo
@@ -76,7 +76,6 @@ describe("handleDirectoryDeleteDiffs", () => {
     });
 
     test("with file already in .deleted",  async () => {
-        untildify.mockReturnValue(baseRepoPath);
         fs.mkdirSync(path.join(cacheRepoBranchPath, "directory"), { recursive: true });
         fs.writeFileSync(cacheFilePath, "use babel;");
         await handleDirectoryDeleteDiffs(repoPath, DEFAULT_BRANCH, "directory");
