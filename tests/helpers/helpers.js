@@ -1,9 +1,7 @@
 import fs from "fs";
 import path from "path";
-import untildify from "untildify";
 
 import {DIFF_SOURCE} from "../../lib/constants";
-import { formatPath } from "../../lib/utils/path_utils";
 
 export async function waitFor(seconds) {
     return await new Promise((r) => setTimeout(r, seconds*1000));
@@ -130,25 +128,18 @@ export function randomRepoPath() {
 }
 
 export function getConfigFilePath(baseRepoPath) {
-    // const formattedPath = formatPath(baseRepoPath);
-    // untildify.mockReturnValue(formattedPath);
     return path.join(baseRepoPath, "config.yml");
 }
 
 export function getUserFilePath(baseRepoPath) {
-    // const formattedPath = formatPath(baseRepoPath);
-    // untildify.mockReturnValue(formattedPath);
     return path.join(baseRepoPath, "user.yml");
 }
 
 export function getSeqTokenFilePath(baseRepoPath) {
-    // const formattedPath = formatPath(baseRepoPath);
-    // untildify.mockReturnValue(formattedPath);
     return path.join(baseRepoPath, "sequence_token.yml");
 }
 
 export function getSyncIgnoreFilePath(repoPath) {
-    // const formattedPath = formatPath(repoPath);
     return path.join(repoPath, ".syncignore");
 }
 
@@ -161,6 +152,5 @@ export function rmDir(dirPath) {
 }
 
 export function writeFile(filePath, data) {
-    // const formattedPath = formatPath(filePath);
     fs.writeFileSync(filePath, data);
 }

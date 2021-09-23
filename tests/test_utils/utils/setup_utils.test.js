@@ -10,9 +10,8 @@ import {
     randomRepoPath,
     rmDir, mkDir, writeFile
 } from "../../helpers/helpers";
-import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../../lib/utils/setup_utils";
 import {getRepoInSyncMsg, NOTIFICATION} from "../../../lib/constants";
-import {formatPath} from "../../../lib/utils/path_utils";
+import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../../lib/utils/setup_utils";
 
 
 describe("createSystemDirectories",  () => {
@@ -29,7 +28,7 @@ describe("createSystemDirectories",  () => {
 
     test('createSystemDirectories',  () => {
         createSystemDirectories();
-        const lsResult = fs.readdirSync(formatPath(baseRepoPath));
+        const lsResult = fs.readdirSync(baseRepoPath);
         expect(lsResult.includes(".diffs")).toBe(true);
         expect(lsResult.includes(".originals")).toBe(true);
         expect(lsResult.includes(".shadow")).toBe(true);
@@ -64,7 +63,7 @@ describe("setupCodeSync",  () => {
 
     test('with no user.yml', async () => {
         const port = await setupCodeSync(repoPath);
-        const lsResult = fs.readdirSync(formatPath(baseRepoPath));
+        const lsResult = fs.readdirSync(baseRepoPath);
         expect(lsResult.includes(".diffs")).toBe(true);
         expect(lsResult.includes(".originals")).toBe(true);
         expect(lsResult.includes(".shadow")).toBe(true);
