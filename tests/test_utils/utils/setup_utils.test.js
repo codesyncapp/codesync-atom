@@ -120,9 +120,8 @@ describe("setupCodeSync",  () => {
         const repoInSyncMsg = getRepoInSyncMsg(repoPath);
         expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(repoInSyncMsg);
         const options = global.atom.notifications.addInfo.mock.calls[0][1];
-        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
-        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.UNSYNC_REPO);
         expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
     });
