@@ -1,0 +1,8 @@
+# The SSM key to look up
+
+ssm_parameter: 
+
+# The corresponding environment variable name to assign the secret to
+
+env_variable_name: 
+
