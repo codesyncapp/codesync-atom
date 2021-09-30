@@ -44,16 +44,16 @@ describe("isValidRepoSize",  () => {
         const initUtilsObj = new initUtils();
         const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE-10, USER_PLAN);
         expect(isValid).toBe(true);
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
     });
 
     test("false result",  () => {
         const initUtilsObj = new initUtils();
         const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE+10, USER_PLAN);
         expect(isValid).toBe(false);
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addError.mock.calls[0][0].startsWith(NOTIFICATION.REPOS_LIMIT_BREACHED)).toBe(true);
-        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addError.mock.calls[0][0].startsWith(NOTIFICATION.REPOS_LIMIT_BREACHED)).toBe(true);
+        const options = atom.notifications.addError.mock.calls[0][1];
         expect(options).toBeFalsy();
     });
 });
@@ -70,16 +70,16 @@ describe("isValidFilesCount",  () => {
         const initUtilsObj = new initUtils();
         const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT-10, USER_PLAN);
         expect(isValid).toBe(true);
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
     });
 
     test("false result",  () => {
         const initUtilsObj = new initUtils();
         const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT+10, USER_PLAN);
         expect(isValid).toBe(false);
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addError.mock.calls[0][0].startsWith(NOTIFICATION.FILES_LIMIT_BREACHED)).toBe(true);
-        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addError.mock.calls[0][0].startsWith(NOTIFICATION.FILES_LIMIT_BREACHED)).toBe(true);
+        const options = atom.notifications.addError.mock.calls[0][1];
         expect(options).toBeFalsy();
     });
 });
@@ -497,9 +497,9 @@ describe("uploadRepo",  () => {
         const users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(false);
         // Verify error msg
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.SYNC_FAILED);
-        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.SYNC_FAILED);
+        const options = atom.notifications.addError.mock.calls[0][1];
         expect(options).toBeFalsy();
     });
 });

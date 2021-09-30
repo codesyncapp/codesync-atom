@@ -62,7 +62,7 @@ describe("setupCodeSync",  () => {
     });
 
     test('with no user.yml', async () => {
-        const port = await setupCodeSync(repoPath);
+        const port = await setupCodeSync(undefined);
         const lsResult = fs.readdirSync(baseRepoPath);
         expect(lsResult.includes(".diffs")).toBe(true);
         expect(lsResult.includes(".originals")).toBe(true);
@@ -72,9 +72,9 @@ describe("setupCodeSync",  () => {
         expect(lsResult.includes("sequence_token.yml")).toBe(true);
         // should return port number
         expect(port).toBeTruthy();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.JOIN);
         expect(options.dismissable).toBe(true);
@@ -83,16 +83,22 @@ describe("setupCodeSync",  () => {
 
     test('with empty user.yml', async () => {
         writeFile(userFilePath, yaml.safeDump({}));
-        const port = await setupCodeSync(repoPath);
+        const port = await setupCodeSync(undefined);
         // should return port number
         expect(port).toBeTruthy();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.JOIN);
         expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
+    });
+
+    test('with user no repo opened', async () => {
+        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        await setupCodeSync(undefined);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
     test('with user and repo not synced', async () => {
@@ -100,9 +106,9 @@ describe("setupCodeSync",  () => {
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.CONNECT_REPO);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.CONNECT_REPO);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(2);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.CONNECT);
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
@@ -116,10 +122,10 @@ describe("setupCodeSync",  () => {
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeFalsy();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         const repoInSyncMsg = getRepoInSyncMsg(repoPath);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toBe(repoInSyncMsg);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(repoInSyncMsg);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
         expect(options.dismissable).toBe(true);
@@ -127,7 +133,7 @@ describe("setupCodeSync",  () => {
     });
 
     test('showConnectRepoView',  async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         writeFile(configPath, yaml.safeDump({repos: {}}));
         const shouldShowConnectRepoView = showConnectRepoView();
         expect(shouldShowConnectRepoView).toBe(true);

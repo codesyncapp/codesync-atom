@@ -39,7 +39,7 @@ describe("generateMenu",  () => {
     });
 
     test("User not connected; No Repo Opened", () => {
-        global.atom.project.getPaths.mockReturnValue([undefined]);
+        atom.project.getPaths.mockReturnValue([undefined]);
         const menu = generateMenu();
         const menuOptions = menu[0]['submenu'][0]['submenu'];
         expect(menuOptions).toHaveLength(1);
@@ -47,7 +47,7 @@ describe("generateMenu",  () => {
     });
 
     test("User not connected: Repo Opened", () => {
-        global.atom.project.getPaths.mockReturnValue([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const menu = generateMenu();
         const menuOptions = menu[0]['submenu'][0]['submenu'];
         expect(menuOptions).toHaveLength(1);
@@ -56,7 +56,7 @@ describe("generateMenu",  () => {
 
     test("User is connected: No Repo Opened", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        global.atom.project.getPaths.mockReturnValue([undefined]);
+        atom.project.getPaths.mockReturnValue([undefined]);
         const menu = generateMenu();
         const menuOptions = menu[0]['submenu'][0]['submenu'];
         expect(menuOptions).toHaveLength(1);
@@ -65,7 +65,7 @@ describe("generateMenu",  () => {
 
     test("User is connected: Repo Opened and NOT connected", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        global.atom.project.getPaths.mockReturnValue([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const config = {'repos': {}};
         fs.writeFileSync(configPath, yaml.safeDump(config));
 
@@ -79,7 +79,7 @@ describe("generateMenu",  () => {
 
     test("User is connected: Repo Opened and not connected", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        global.atom.project.getPaths.mockReturnValue([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const config = {'repos': {}};
         config.repos[repoPath] = {'branches': {}};
         fs.writeFileSync(configPath, yaml.safeDump(config));
@@ -118,7 +118,7 @@ describe("generateRightClickMenu",  () => {
     });
 
     test("User not connected; No Repo Opened", () => {
-        global.atom.project.getPaths.mockReturnValue([undefined]);
+        atom.project.getPaths.mockReturnValue([undefined]);
         const menu = generateRightClickMenu();
         const menuOptions = menu['atom-text-editor'][0]['submenu'];
         expect(menuOptions).toHaveLength(1);
@@ -126,7 +126,7 @@ describe("generateRightClickMenu",  () => {
     });
 
     test("User not connected: Repo Opened", () => {
-        global.atom.project.getPaths.mockReturnValue([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const menu = generateRightClickMenu();
         const menuOptions = menu['atom-text-editor'][0]['submenu'];
         expect(menuOptions).toHaveLength(1);
@@ -135,7 +135,7 @@ describe("generateRightClickMenu",  () => {
 
     test("User is connected: No Repo Opened", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        global.atom.project.getPaths.mockReturnValue([undefined]);
+        atom.project.getPaths.mockReturnValue([undefined]);
         const menu = generateRightClickMenu();
         const menuOptions = menu['atom-text-editor'][0]['submenu'];
         expect(menuOptions).toHaveLength(1);
@@ -144,7 +144,7 @@ describe("generateRightClickMenu",  () => {
 
     test("User is connected: Repo Opened and NOT connected", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        global.atom.project.getPaths.mockReturnValue([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const config = {'repos': {}};
         fs.writeFileSync(configPath, yaml.safeDump(config));
 
@@ -157,7 +157,7 @@ describe("generateRightClickMenu",  () => {
 
     test("User is connected: Repo Opened and not connected", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        global.atom.project.getPaths.mockReturnValue([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const config = {'repos': {}};
         config.repos[repoPath] = {'branches': {}};
         fs.writeFileSync(configPath, yaml.safeDump(config));
@@ -188,11 +188,11 @@ describe("updateMenu",  () => {
         global.menuDisposable = {
             dispose: jest.fn()
         };
-        global.atom.project.getPaths.mockReturnValue([undefined]);
-        global.atom.menu.add.mockReturnValue("MockValue");
+        atom.project.getPaths.mockReturnValue([undefined]);
+        atom.menu.add.mockReturnValue("MockValue");
         updateMenu();
         expect(global.menuDisposable).toStrictEqual("MockValue");
-        expect(global.atom.menu.sortPackagesMenu).toHaveBeenCalledTimes(1);
+        expect(atom.menu.sortPackagesMenu).toHaveBeenCalledTimes(1);
     })
 
 });
@@ -212,8 +212,8 @@ describe("updateContextMenu",  () => {
         global.contextMenuDisposable = {
             dispose: jest.fn()
         };
-        global.atom.project.getPaths.mockReturnValue([undefined]);
-        global.atom.contextMenu.add.mockReturnValue("MockValue");
+        atom.project.getPaths.mockReturnValue([undefined]);
+        atom.contextMenu.add.mockReturnValue("MockValue");
         updateContextMenu();
         expect(global.contextMenuDisposable).toStrictEqual("MockValue");
     })

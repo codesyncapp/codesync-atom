@@ -61,19 +61,19 @@ describe("SyncHandler", () => {
     });
 
     test("No Repo Path", () => {
-        global.atom.project.getPaths.mockReturnValueOnce([undefined]);
+        atom.project.getPaths.mockReturnValueOnce([undefined]);
         SyncHandler();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
     test("repo Not In Config",  () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         SyncHandler();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
         // TODO: In case we activate choose account option
-        // expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        // expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);
-        // const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        // expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        // expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);
+        // const options = atom.notifications.addInfo.mock.calls[0][1];
         // expect(options.buttons).toHaveLength(2);
         // expect(options.buttons[0].text).toStrictEqual(TEST_EMAIL);
         // expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.USE_DIFFERENT_ACCOUNT);
@@ -83,12 +83,12 @@ describe("SyncHandler", () => {
     test("repo In Config", () => {
         configData.repos[repoPath] = {branches: {}};
         fs.writeFileSync(configPath, yaml.safeDump(configData));
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         SyncHandler();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         const repoInSyncMsg = getRepoInSyncMsg(repoPath);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(repoInSyncMsg);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(repoInSyncMsg);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options).toBeFalsy();
     });
 
@@ -119,17 +119,17 @@ describe("unSyncHandler", () => {
     });
 
     test("No Repo Path", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([undefined]);
+        atom.project.getPaths.mockReturnValueOnce([undefined]);
         await unSyncHandler();
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
     test("Ask Unsync confirmation", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         await unSyncHandler();
-        expect(global.atom.notifications.addWarning).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_CONFIRMATION);
-        const options = global.atom.notifications.addWarning.mock.calls[0][1];
+        expect(atom.notifications.addWarning).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_CONFIRMATION);
+        const options = atom.notifications.addWarning.mock.calls[0][1];
         expect(options.buttons).toHaveLength(2);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.YES);
         expect(options.buttons[0].onDidClick).toBeTruthy();
@@ -166,19 +166,19 @@ describe("postSelectionUnsync", () => {
     });
 
     test("Repo is already inactive", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         configData.repos[repoPath] = {
             is_disconnected: true,
             branches: {}
         };
         fs.writeFileSync(configPath, yaml.safeDump(configData));
         await postSelectionUnsync(repoPath, null);
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(0);
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
     test("Unsyncing error from server", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         configData.repos[repoPath] = {
             id: 12345,
             email: TEST_EMAIL,
@@ -187,15 +187,15 @@ describe("postSelectionUnsync", () => {
         fs.writeFileSync(configPath, yaml.safeDump(configData));
         fetchMock.mockResponseOnce(JSON.stringify({error: "NOT SO FAST"}));
 
-        await postSelectionUnsync(repoPath, global.atom.notifications.addInfo());
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_FAILED);
-        const options = global.atom.notifications.addError.mock.calls[0][1];
+        await postSelectionUnsync(repoPath, atom.notifications.addInfo());
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_FAILED);
+        const options = atom.notifications.addError.mock.calls[0][1];
         expect(options).toBeFalsy();
     });
 
     test("Synced successfully", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         configData.repos[repoPath] = {
             id: 12345,
             email: TEST_EMAIL,
@@ -204,14 +204,14 @@ describe("postSelectionUnsync", () => {
         fs.writeFileSync(configPath, yaml.safeDump(configData));
         fetchMock.mockResponseOnce(JSON.stringify({}));
 
-        await postSelectionUnsync(repoPath, global.atom.notifications.addWarning());
+        await postSelectionUnsync(repoPath, atom.notifications.addWarning());
 
         // Read config
         const config = readYML(configPath);
         expect(config.repos[repoPath].is_disconnected).toBe(true);
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(0);
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNCED);
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNCED);
     });
 });
 
@@ -240,7 +240,7 @@ describe("trackRepoHandler", () => {
     });
 
     test("No Repo Path", () => {
-        global.atom.project.getPaths.mockReturnValueOnce([undefined]);
+        atom.project.getPaths.mockReturnValueOnce([undefined]);
         trackRepoHandler();
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
     });

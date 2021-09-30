@@ -31,19 +31,19 @@ describe("showChooseAccount",  () => {
     test("with no user",  async () => {
         fs.writeFileSync(userFilePath, yaml.safeDump({}));
         await showChooseAccount(repoPath);
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.NO_VALID_ACCOUNT);
-        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.NO_VALID_ACCOUNT);
+        const options = atom.notifications.addError.mock.calls[0][1];
         expect(options).toBeFalsy();
     });
 
     test("with valid user",  async () => {
         await showChooseAccount(repoPath);
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
         // TODO: In case we activate choose account option
-        // expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        // expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);
-        // const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        // expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        // expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);
+        // const options = atom.notifications.addInfo.mock.calls[0][1];
         // expect(options.buttons).toHaveLength(2);
         // expect(options.buttons[0].text).toStrictEqual(TEST_EMAIL);
         // expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.USE_DIFFERENT_ACCOUNT);
@@ -60,10 +60,10 @@ describe("askPublicOrPrivate",  () => {
 
     test("askPublicOrPrivate",  async () => {
         await askPublicOrPrivate(repoPath);
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         const msg = getPublicPrivateMsg(repoPath);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(msg);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(msg);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(2);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.PUBLIC);
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.PRIVATE);

@@ -111,38 +111,38 @@ describe("createUser",  () => {
     test("with invalid token", async () => {
         fetchMock.mockResponseOnce(JSON.stringify(INVALID_TOKEN_JSON));
         await createUser("TOKEN", idToken, repoPath);
-        expect(global.atom.notifications.addError).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.LOGIN_FAILED);
-        const options = global.atom.notifications.addError.mock.calls[0][1];
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.LOGIN_FAILED);
+        const options = atom.notifications.addError.mock.calls[0][1];
         expect(options).toBeFalsy();
 
     });
 
     test("with valid token and user not in user.yml", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         const user = {"user": {"id": 1}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
         global.skipAskConnect = false;
         await createUser("TOKEN", idToken, repoPath);
         const users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
-        expect(global.atom.project.getPaths).toHaveBeenCalledTimes(1);
+        expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
     });
 
     test("with user in user.yml", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValueOnce([repoPath]);
         let users = {};
         users[TEST_EMAIL] = {access_token: "abc"};
         fs.writeFileSync(userFilePath, yaml.safeDump(users));
         const user = {"user": {"id": 1}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
         await createUser("TOKEN", idToken, repoPath);
-        expect(global.atom.project.getPaths).toHaveBeenCalledTimes(1);
+        expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
         users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CONNECT_AFTER_JOIN);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CONNECT_AFTER_JOIN);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(2);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.CONNECT);
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
@@ -151,19 +151,19 @@ describe("createUser",  () => {
     });
 
     test("with no repoPath", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([undefined]);
+        atom.project.getPaths.mockReturnValueOnce([undefined]);
         let users = {};
         users[TEST_EMAIL] = {access_token: "abc"};
         fs.writeFileSync(userFilePath, yaml.safeDump(users));
         const user = {"user": {"id": 1}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
         await createUser("TOKEN", idToken, repoPath);
-        expect(global.atom.project.getPaths).toHaveBeenCalledTimes(1);
+        expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
         users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
-        expect(global.atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.AUTHENTICATED_WITH_NO_REPO_OPENED);
-        const options = global.atom.notifications.addInfo.mock.calls[0][1];
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.AUTHENTICATED_WITH_NO_REPO_OPENED);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toBeFalsy();
         expect(options.dismissable).toBe(true);
     });
@@ -177,9 +177,9 @@ describe("askAndTriggerSignUp",  () => {
 
     test("askAndTriggerSignUp", () => {
         askAndTriggerSignUp();
-        expect(global.atom.notifications.addWarning).toHaveBeenCalledTimes(1);
-        expect(global.atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.AUTHENTICATION_FAILED);
-        const options = global.atom.notifications.addWarning.mock.calls[0][1];
+        expect(atom.notifications.addWarning).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.AUTHENTICATION_FAILED);
+        const options = atom.notifications.addWarning.mock.calls[0][1];
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.LOGIN);
         expect(options.dismissable).toBe(true);

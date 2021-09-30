@@ -10,7 +10,8 @@ export async function waitFor(seconds) {
 export const buildAtomEnv = () => {
     global.atom = {
         views: {
-            getView: jest.fn()
+            getView: jest.fn(),
+            addViewProvider: jest.fn()
         },
         notifications: {
             addWarning: jest.fn(),
@@ -20,16 +21,23 @@ export const buildAtomEnv = () => {
             addError: jest.fn()
         },
         project: {
-            getPaths: jest.fn()
+            getPaths: jest.fn(),
+            onDidChangePaths: jest.fn(),
+            onDidChangeFiles: jest.fn(),
+
         },
         workspace: {
-            getActiveTextEditor: jest.fn()
+            getActiveTextEditor: jest.fn(),
+            observeTextEditors: jest.fn()
         },
         menu: {
             add: jest.fn(),
             sortPackagesMenu: jest.fn()
         },
         contextMenu: {
+            add: jest.fn()
+        },
+        commands: {
             add: jest.fn()
         }
     };
