@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.26.9 Unreleased] - 2021-10-
 ### Changed
 - tests written for codesync.js
+- eventHandler class introduced
 
 ## [2.26.8] - 2021-09-29
 ### Changed

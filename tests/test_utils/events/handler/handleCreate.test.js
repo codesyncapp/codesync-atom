@@ -1,11 +1,11 @@
 import fs from "fs";
 import path from "path";
 import untildify from "untildify";
-
+import yaml from "js-yaml";
 import {readYML} from "../../../../lib/utils/common";
-import {handleNewFile} from "../../../../lib/events/utils";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../../lib/constants";
 import {
+    buildAtomEnv, getConfigFilePath,
     getSyncIgnoreFilePath,
     mkDir,
     randomBaseRepoPath,
@@ -14,11 +14,27 @@ import {
     writeFile
 } from "../../../helpers/helpers";
 import {pathUtils} from "../../../../lib/utils/path_utils";
+import {eventHandler} from "../../../../lib/events/event_handler";
 
 describe("handleNewFile",  () => {
+    /*
+         *
+         {
+            source: 'vs-code',
+            created_at: '2021-08-26 18:59:51.954',
+            diff: "",
+            repo_path: 'tests/tests_data/test_repo_sNIVUqukDv',
+            branch: 'default',
+            file_relative_path: 'new.js',
+            is_new_file: true
+          }
+        *
+    * */
+
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
 
+    const configPath = getConfigFilePath(baseRepoPath);
     untildify.mockReturnValue(baseRepoPath);
 
     const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
@@ -37,6 +53,8 @@ describe("handleNewFile",  () => {
     beforeEach(() => {
         jest.clearAllMocks();
         untildify.mockReturnValue(baseRepoPath);
+        buildAtomEnv();
+        atom.project.getPaths.mockReturnValue([repoPath]);
         // Create directories
         mkDir(repoPath);
         mkDir(diffsRepo);
@@ -52,21 +70,35 @@ describe("handleNewFile",  () => {
         rmDir(repoPath);
     });
 
+    test("Repo not synced", () => {
+        const handler = new eventHandler();
+        handler.handleNewFile(newFilePath);
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
+        // Verify file has been created in the .shadow repo and .originals repos
+        expect(fs.existsSync(shadowFilePath)).toBe(false);
+        expect(fs.existsSync(originalsFilePath)).toBe(false);
+    });
+
+    test("Synced repo, Ignorable file", () => {
+        const config = {'repos': {}};
+        config.repos[repoPath] = {'branches': {}};
+        fs.writeFileSync(configPath, yaml.safeDump(config));
+        const filePath = path.join(repoPath, "node_modules", "express", "index.js");
+        const handler = new eventHandler();
+        handler.handleNewFile(filePath);
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
+    });
+
     test("Valid File",  () => {
-        /*
-         *
-         {
-            source: 'vs-code',
-            created_at: '2021-08-26 18:59:51.954',
-            diff: "",
-            repo_path: 'tests/tests_data/test_repo_sNIVUqukDv',
-            branch: 'default',
-            file_relative_path: 'new.js',
-            is_new_file: true
-          }
-        *
-        * */
-        handleNewFile(repoPath, DEFAULT_BRANCH, newFilePath);
+        const config = {'repos': {}};
+        config.repos[repoPath] = {'branches': {}};
+        fs.writeFileSync(configPath, yaml.safeDump(config));
+        const handler = new eventHandler();
+        handler.handleNewFile(newFilePath);
         // Verify file has been created in the .shadow repo and .originals repos
         expect(fs.existsSync(shadowFilePath)).toBe(true);
         expect(fs.existsSync(originalsFilePath)).toBe(true);
@@ -86,7 +118,12 @@ describe("handleNewFile",  () => {
     });
 
     test("with syncignored file", () => {
-        handleNewFile(repoPath, DEFAULT_BRANCH, ignorableFilePath);
+        const config = {'repos': {}};
+        config.repos[repoPath] = {'branches': {}};
+        fs.writeFileSync(configPath, yaml.safeDump(config));
+
+        const handler = new eventHandler();
+        handler.handleNewFile(ignorableFilePath);
         // Verify file has been created in the .shadow repo and .originals repos
         expect(fs.existsSync(path.join(shadowRepoBranchPath, "ignore.js"))).toBe(false);
         expect(fs.existsSync(path.join(originalsRepoBranchPath, "ignore.js"))).toBe(false);
@@ -96,8 +133,13 @@ describe("handleNewFile",  () => {
     });
 
     test("with shadow file there", () => {
+        const config = {'repos': {}};
+        config.repos[repoPath] = {'branches': {}};
+        fs.writeFileSync(configPath, yaml.safeDump(config));
+
         fs.writeFileSync(shadowFilePath, "use babel;");
-        handleNewFile(repoPath, DEFAULT_BRANCH, newFilePath);
+        const handler = new eventHandler();
+        handler.handleNewFile(newFilePath);
         // Verify file has been NOT created in the .originals repos
         expect(fs.existsSync(originalsFilePath)).toBe(false);
         // Verify correct diff file has been generated
@@ -106,8 +148,13 @@ describe("handleNewFile",  () => {
     });
 
     test("with originals file there", () => {
+        const config = {'repos': {}};
+        config.repos[repoPath] = {'branches': {}};
+        fs.writeFileSync(configPath, yaml.safeDump(config));
+
         fs.writeFileSync(originalsFilePath, "use babel;");
-        handleNewFile(repoPath, DEFAULT_BRANCH, newFilePath);
+        const handler = new eventHandler();
+        handler.handleNewFile(newFilePath);
         // Verify file has NOT been created in the .shadow repo
         expect(fs.existsSync(shadowFilePath)).toBe(false);
         // Verify correct diff file has been generated
@@ -115,13 +162,15 @@ describe("handleNewFile",  () => {
         expect(diffFiles).toHaveLength(0);
     });
 
-
     test("with new directory", () => {
+        const config = {'repos': {}};
+        config.repos[repoPath] = {'branches': {}};
+        fs.writeFileSync(configPath, yaml.safeDump(config));
         fs.mkdirSync(newDirectoryPath, { recursive: true });
-        handleNewFile(repoPath, DEFAULT_BRANCH, newDirectoryPath);
+        const handler = new eventHandler();
+        handler.handleNewFile(newDirectoryPath);
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
     });
-
 });

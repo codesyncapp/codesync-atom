@@ -3,10 +3,10 @@ import path from "path";
 
 import {shouldIgnoreFile} from "../../../../lib/events/utils";
 import {getSyncIgnoreFilePath, randomBaseRepoPath, randomRepoPath} from "../../../helpers/helpers";
+import {IGNORABLE_DIRECTORIES} from "../../../../lib/constants";
 
 const baseRepoPath = randomBaseRepoPath();
 
-const gitFilePath = path.join(".git", "objects", "12345");
 const normalFilePath = path.join("abc", "12345.js");
 const ignorableFilePath = "ignore.js";
 
@@ -26,12 +26,14 @@ afterAll(() => {
     fs.rmdirSync(repoPath, { recursive: true });
 });
 
-test("shouldIgnoreFile with git file",  () => {
-    expect(shouldIgnoreFile(repoPath, gitFilePath)).toBe(true);
+test("Standard ignorable directories",  () => {
+    IGNORABLE_DIRECTORIES.forEach((item) => {
+        expect(shouldIgnoreFile(repoPath, item)).toBe(true);
+    });
 });
 
 test("shouldIgnoreFile with normal file and no .syncignore",  () => {
-    expect(shouldIgnoreFile(repoPath, normalFilePath)).toBe(true);
+    expect(shouldIgnoreFile(repoPath, normalFilePath)).toBe(false);
 });
 
 test("shouldIgnoreFile with normal file and with .syncignore",  () => {
