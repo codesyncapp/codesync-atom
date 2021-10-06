@@ -73,8 +73,8 @@ describe("generateMenu",  () => {
 
         const menuOptions = menu[0]['submenu'][0]['submenu'];
         expect(menuOptions).toHaveLength(2);
-        expect(menuOptions[0]).toStrictEqual(MenuOptions.LOGOUT)
-        expect(menuOptions[1]).toStrictEqual(MenuOptions.CONNECT_REPO)
+        expect(menuOptions[0]).toStrictEqual(MenuOptions.CONNECT_REPO);
+        expect(menuOptions[1]).toStrictEqual(MenuOptions.LOGOUT);
     });
 
     test("User is connected: Repo Opened and not connected", () => {
@@ -88,10 +88,10 @@ describe("generateMenu",  () => {
 
         const menuOptions = menu[0]['submenu'][0]['submenu'];
         expect(menuOptions).toHaveLength(4);
-        expect(menuOptions[0]).toStrictEqual(MenuOptions.LOGOUT)
-        expect(menuOptions[1]).toStrictEqual(MenuOptions.DISCONNECT_REPO)
-        expect(menuOptions[2]).toStrictEqual(MenuOptions.REPO_PLAYBACK)
-        expect(menuOptions[3]).toStrictEqual(MenuOptions.FILE_PLAYBACK)
+        expect(menuOptions[0]).toStrictEqual(MenuOptions.FILE_PLAYBACK);
+        expect(menuOptions[1]).toStrictEqual(MenuOptions.REPO_PLAYBACK);
+        expect(menuOptions[2]).toStrictEqual(MenuOptions.DISCONNECT_REPO);
+        expect(menuOptions[3]).toStrictEqual(MenuOptions.LOGOUT);
     });
 
 });
@@ -151,11 +151,11 @@ describe("generateRightClickMenu",  () => {
         const menu = generateRightClickMenu();
         const menuOptions = menu['atom-text-editor'][0]['submenu'];
         expect(menuOptions).toHaveLength(2);
-        expect(menuOptions[0]).toStrictEqual(MenuOptions.LOGOUT)
-        expect(menuOptions[1]).toStrictEqual(MenuOptions.CONNECT_REPO)
+        expect(menuOptions[0]).toStrictEqual(MenuOptions.CONNECT_REPO);
+        expect(menuOptions[1]).toStrictEqual(MenuOptions.LOGOUT);
     });
 
-    test("User is connected: Repo Opened and not connected", () => {
+    test("User is connected: Repo Opened and connected", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
         atom.project.getPaths.mockReturnValue([repoPath]);
         const config = {'repos': {}};
@@ -166,10 +166,10 @@ describe("generateRightClickMenu",  () => {
 
         const menuOptions = menu['atom-text-editor'][0]['submenu'];
         expect(menuOptions).toHaveLength(4);
-        expect(menuOptions[0]).toStrictEqual(MenuOptions.LOGOUT)
-        expect(menuOptions[1]).toStrictEqual(MenuOptions.DISCONNECT_REPO)
-        expect(menuOptions[2]).toStrictEqual(MenuOptions.REPO_PLAYBACK)
-        expect(menuOptions[3]).toStrictEqual(MenuOptions.FILE_PLAYBACK)
+        expect(menuOptions[0]).toStrictEqual(MenuOptions.FILE_PLAYBACK)
+        expect(menuOptions[1]).toStrictEqual(MenuOptions.REPO_PLAYBACK);
+        expect(menuOptions[2]).toStrictEqual(MenuOptions.DISCONNECT_REPO);
+        expect(menuOptions[3]).toStrictEqual(MenuOptions.LOGOUT);
     });
 
 });
