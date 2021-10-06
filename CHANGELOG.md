@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.26.10] - 2021-10-06
+### Fixed
+- Fixed real time events for branch change
+- Fixed copyFilesTo from .shadow to .deleted for Windows
+### Changed
+- initHandler class introduced
+- Tests added for initHandler
+
 ## [2.26.9] - 2021-10-03
 ### Changed
 - tests written for codesync.js
