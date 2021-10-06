@@ -28,7 +28,8 @@ export const buildAtomEnv = () => {
         },
         workspace: {
             getActiveTextEditor: jest.fn(),
-            observeTextEditors: jest.fn()
+            observeTextEditors: jest.fn(),
+            open: jest.fn()
         },
         menu: {
             add: jest.fn(),
