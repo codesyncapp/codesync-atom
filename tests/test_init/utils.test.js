@@ -31,7 +31,7 @@ import {DEFAULT_BRANCH, NOTIFICATION, SYNCIGNORE} from "../../lib/constants";
 import {pathUtils} from "../../lib/utils/path_utils";
 
 
-describe("isValidRepoSize",  () => {
+describe("isValidRepoSize", () => {
     const baseRepoPath = randomBaseRepoPath();
 
     beforeEach(() => {
@@ -40,16 +40,16 @@ describe("isValidRepoSize",  () => {
         untildify.mockReturnValue(baseRepoPath);
     });
 
-    test("true result",  () => {
+    test("true result", () => {
         const initUtilsObj = new initUtils();
-        const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE-10, USER_PLAN);
+        const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE - 10, USER_PLAN);
         expect(isValid).toBe(true);
         expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
     });
 
-    test("false result",  () => {
+    test("false result", () => {
         const initUtilsObj = new initUtils();
-        const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE+10, USER_PLAN);
+        const isValid = initUtilsObj.isValidRepoSize(USER_PLAN.SIZE + 10, USER_PLAN);
         expect(isValid).toBe(false);
         expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addError.mock.calls[0][0].startsWith(NOTIFICATION.REPOS_LIMIT_BREACHED)).toBe(true);
@@ -58,7 +58,7 @@ describe("isValidRepoSize",  () => {
     });
 });
 
-describe("isValidFilesCount",  () => {
+describe("isValidFilesCount", () => {
     const baseRepoPath = randomBaseRepoPath();
 
     beforeEach(() => {
@@ -66,16 +66,16 @@ describe("isValidFilesCount",  () => {
         untildify.mockReturnValue(baseRepoPath);
     });
 
-    test("true result",  () => {
+    test("true result", () => {
         const initUtilsObj = new initUtils();
-        const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT-10, USER_PLAN);
+        const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT - 10, USER_PLAN);
         expect(isValid).toBe(true);
         expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
     });
 
-    test("false result",  () => {
+    test("false result", () => {
         const initUtilsObj = new initUtils();
-        const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT+10, USER_PLAN);
+        const isValid = initUtilsObj.isValidFilesCount(USER_PLAN.FILE_COUNT + 10, USER_PLAN);
         expect(isValid).toBe(false);
         expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addError.mock.calls[0][0].startsWith(NOTIFICATION.FILES_LIMIT_BREACHED)).toBe(true);
@@ -84,7 +84,7 @@ describe("isValidFilesCount",  () => {
     });
 });
 
-describe("successfullySynced",  () => {
+describe("successfullySynced", () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
     const configPath = getConfigFilePath(baseRepoPath);
@@ -99,17 +99,17 @@ describe("successfullySynced",  () => {
     });
 
     afterEach(() => {
-        fs.rmSync(repoPath, { recursive: true, force: true });
-        fs.rmSync(baseRepoPath, { recursive: true, force: true });
+        fs.rmSync(repoPath, {recursive: true, force: true});
+        fs.rmSync(baseRepoPath, {recursive: true, force: true});
     });
 
-    test("Non-Synced Repo",  () => {
+    test("Non-Synced Repo", () => {
         const initUtilsObj = new initUtils(repoPath);
         const isSynced = initUtilsObj.successfullySynced();
         expect(isSynced).toBe(false);
     });
 
-    test("Non Synced Branch",  () => {
+    test("Non Synced Branch", () => {
         const initUtilsObj = new initUtils(repoPath);
         configData.repos[repoPath] = {branches: {}};
         fs.writeFileSync(configPath, yaml.safeDump(configData));
@@ -117,7 +117,7 @@ describe("successfullySynced",  () => {
         expect(isSynced).toBe(true);
     });
 
-    test("Invalid file IDs",  () => {
+    test("Invalid file IDs", () => {
         const initUtilsObj = new initUtils(repoPath);
         configData.repos[repoPath] = {branches: {}};
         configData.repos[repoPath].branches[DEFAULT_BRANCH] = {
@@ -130,7 +130,7 @@ describe("successfullySynced",  () => {
         expect(isSynced).toBe(false);
     });
 
-    test("Valid file IDs",  () => {
+    test("Valid file IDs", () => {
         const initUtilsObj = new initUtils(repoPath);
         configData.repos[repoPath] = {branches: {}};
         configData.repos[repoPath].branches[DEFAULT_BRANCH] = {
@@ -144,7 +144,7 @@ describe("successfullySynced",  () => {
     });
 });
 
-describe("getSyncablePaths",  () => {
+describe("getSyncablePaths", () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
     const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
@@ -158,22 +158,22 @@ describe("getSyncablePaths",  () => {
     });
 
     afterEach(() => {
-        fs.rmSync(repoPath, { recursive: true, force: true });
-        fs.rmSync(baseRepoPath, { recursive: true, force: true });
+        fs.rmSync(repoPath, {recursive: true, force: true});
+        fs.rmSync(baseRepoPath, {recursive: true, force: true});
     });
 
-    test("No .syncignore",  () => {
+    test("No .syncignore", () => {
         fs.writeFileSync(filePath, "");
         const initUtilsObj = new initUtils(repoPath);
         const paths = initUtilsObj.getSyncablePaths(USER_PLAN);
         expect(paths).toHaveLength(1);
     });
 
-    test("Ignore file and match rest",  () => {
+    test("Ignore file and match rest", () => {
         isBinaryFileSync.mockReturnValue(false);
         fs.writeFileSync(filePath, "");
         fs.writeFileSync(path.join(repoPath, "ignore.js"), DUMMY_FILE_CONTENT);
-        fs.writeFileSync(syncIgnorePath, SYNC_IGNORE_DATA+"\nignore.js");
+        fs.writeFileSync(syncIgnorePath, SYNC_IGNORE_DATA + "\nignore.js");
         const initUtilsObj = new initUtils(repoPath);
         const paths = initUtilsObj.getSyncablePaths(USER_PLAN);
         // 1 is .syncignore, other is file.js
@@ -188,10 +188,10 @@ describe("getSyncablePaths",  () => {
         expect(paths[1].size).toStrictEqual(0);
     });
 
-    test("Size increases the limit",  () => {
+    test("Size increases the limit", () => {
         fs.writeFileSync(filePath, "");
         fs.writeFileSync(path.join(repoPath, "ignore.js"), "DUMMY FILE CONTENT");
-        fs.writeFileSync(syncIgnorePath, SYNC_IGNORE_DATA+"\nignore.js");
+        fs.writeFileSync(syncIgnorePath, SYNC_IGNORE_DATA + "\nignore.js");
         const userPlan = Object.assign({}, USER_PLAN);
         userPlan.SIZE = 0;
         const initUtilsObj = new initUtils(repoPath);
@@ -200,7 +200,7 @@ describe("getSyncablePaths",  () => {
     });
 });
 
-describe("copyFilesTo",  () => {
+describe("copyFilesTo", () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
     const filePath = path.join(repoPath, "file.js");
@@ -219,17 +219,17 @@ describe("copyFilesTo",  () => {
     });
 
     afterEach(() => {
-        fs.rmSync(repoPath, { recursive: true, force: true });
-        fs.rmSync(baseRepoPath, { recursive: true, force: true });
+        fs.rmSync(repoPath, {recursive: true, force: true});
+        fs.rmSync(baseRepoPath, {recursive: true, force: true});
     });
 
-    test("Copy to Shadow repo",  () => {
+    test("Copy to Shadow repo", () => {
         const initUtilsObj = new initUtils(repoPath);
         initUtilsObj.copyFilesTo([filePath], shadowRepo);
         expect(fs.existsSync(path.join(shadowRepo, "file.js"))).toBe(true);
     });
 
-    test("Copy from .shadow to .deleted repo",  () => {
+    test("Copy from .shadow to .deleted repo", () => {
         // Copy to shadow
         const initUtilsObj = new initUtils(repoPath);
         initUtilsObj.copyFilesTo([filePath], shadowRepo);
@@ -241,7 +241,7 @@ describe("copyFilesTo",  () => {
         expect(fs.existsSync(deletedFilePath)).toBe(true);
     });
 
-    test("Copy non-existing file",  () => {
+    test("Copy non-existing file", () => {
         fs.rmSync(filePath);
         const initUtilsObj = new initUtils(repoPath);
         initUtilsObj.copyFilesTo([filePath], shadowRepo);
@@ -249,7 +249,7 @@ describe("copyFilesTo",  () => {
     });
 });
 
-describe("saveIamUser",  () => {
+describe("saveIamUser", () => {
     const baseRepoPath = randomBaseRepoPath();
     const userFilePath = getUserFilePath(baseRepoPath);
     const userFileData = {};
@@ -268,7 +268,7 @@ describe("saveIamUser",  () => {
         rmDir(baseRepoPath);
     });
 
-    test("With no user.yml",  () => {
+    test("With no user.yml", () => {
         const initUtilsObj = new initUtils();
         initUtilsObj.saveIamUser(TEST_USER);
         expect(fs.existsSync(userFilePath)).toBe(true);
@@ -277,7 +277,7 @@ describe("saveIamUser",  () => {
         expect(users[TEST_USER.email].secret_key).toStrictEqual(TEST_USER.iam_secret_key);
     });
 
-    test("User not in user.yml",  () => {
+    test("User not in user.yml", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userFileData));
         const testUser = Object.assign({}, TEST_USER);
         testUser.email = ANOTHER_TEST_EMAIL;
@@ -289,7 +289,7 @@ describe("saveIamUser",  () => {
         expect(users[ANOTHER_TEST_EMAIL].secret_key).toStrictEqual(TEST_USER.iam_secret_key);
     });
 
-    test("User user in user.yml with only access token",  () => {
+    test("User user in user.yml with only access token", () => {
         userFileData[TEST_USER.email] = {
             access_token: "TOKEN ABC"
         };
@@ -307,7 +307,7 @@ describe("saveIamUser",  () => {
 
 });
 
-describe("saveSequenceTokenFile",  () => {
+describe("saveSequenceTokenFile", () => {
     const baseRepoPath = randomBaseRepoPath();
     const sequenceTokenFilePath = getSeqTokenFilePath(baseRepoPath);
     const sequenceTokenFileData = {};
@@ -323,7 +323,7 @@ describe("saveSequenceTokenFile",  () => {
         rmDir(baseRepoPath);
     });
 
-    test("With no sequence_token.yml",  () => {
+    test("With no sequence_token.yml", () => {
         const initUtilsObj = new initUtils();
         initUtilsObj.saveSequenceTokenFile(TEST_EMAIL);
         expect(fs.existsSync(sequenceTokenFilePath)).toBe(true);
@@ -331,7 +331,7 @@ describe("saveSequenceTokenFile",  () => {
         expect(users[TEST_EMAIL]).toStrictEqual("");
     });
 
-    test("User not in user.yml",  () => {
+    test("User not in user.yml", () => {
         const initUtilsObj = new initUtils();
         fs.writeFileSync(sequenceTokenFilePath, yaml.safeDump(sequenceTokenFileData));
         initUtilsObj.saveSequenceTokenFile(ANOTHER_TEST_EMAIL);
@@ -341,7 +341,7 @@ describe("saveSequenceTokenFile",  () => {
     });
 });
 
-describe("saveFileIds",  () => {
+describe("saveFileIds", () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
     const configPath = getConfigFilePath(baseRepoPath);
@@ -357,11 +357,11 @@ describe("saveFileIds",  () => {
     });
 
     afterEach(() => {
-        fs.rmSync(repoPath, { recursive: true, force: true });
-        fs.rmSync(baseRepoPath, { recursive: true, force: true });
+        fs.rmSync(repoPath, {recursive: true, force: true});
+        fs.rmSync(baseRepoPath, {recursive: true, force: true});
     });
 
-    test("Should save file IDs",  () => {
+    test("Should save file IDs", () => {
         const initUtilsObj = new initUtils(repoPath);
         initUtilsObj.saveFileIds(DEFAULT_BRANCH, "ACCESS_TOKEN", TEST_EMAIL, TEST_REPO_RESPONSE);
         const config = readYML(configPath);
@@ -369,7 +369,7 @@ describe("saveFileIds",  () => {
     });
 });
 
-describe("uploadRepo",  () => {
+describe("uploadRepo", () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
     const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
@@ -386,17 +386,17 @@ describe("uploadRepo",  () => {
         mkDir(baseRepoPath);
         mkDir(repoPath);
         writeFile(configPath, yaml.safeDump(configData));
-        writeFile(syncIgnorePath, SYNC_IGNORE_DATA+"\nignore.js");
+        writeFile(syncIgnorePath, SYNC_IGNORE_DATA + "\nignore.js");
         writeFile(filePath, DUMMY_FILE_CONTENT);
         writeFile(path.join(repoPath, "ignore.js"), DUMMY_FILE_CONTENT);
     });
 
     afterEach(() => {
-        fs.rmSync(repoPath, { recursive: true, force: true });
-        fs.rmSync(baseRepoPath, { recursive: true, force: true });
+        fs.rmSync(repoPath, {recursive: true, force: true});
+        fs.rmSync(baseRepoPath, {recursive: true, force: true});
     });
 
-    test("Server Down",  async () => {
+    test("Server Down", async () => {
         // Add repo in config
         configData.repos[repoPath] = {branches: {}};
         writeFile(configPath, yaml.safeDump(configData));
@@ -408,7 +408,7 @@ describe("uploadRepo",  () => {
         // Mock response for checkServerDown
         fetchMock.mockResponseOnce(JSON.stringify({status: false}))
 
-        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths,false,TEST_EMAIL);
+        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths, TEST_EMAIL, false);
 
         // Verify file Ids have been added in config
         const config = readYML(configPath);
@@ -419,7 +419,7 @@ describe("uploadRepo",  () => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
-    test("repo In Config",  async () => {
+    test("repo In Config", async () => {
         // Add repo in config
         configData.repos[repoPath] = {branches: {}};
         writeFile(configPath, yaml.safeDump(configData));
@@ -433,7 +433,7 @@ describe("uploadRepo",  () => {
             .mockResponseOnce(JSON.stringify({status: true}))
             .mockResponseOnce(JSON.stringify(TEST_REPO_RESPONSE));
 
-        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths,false, TEST_EMAIL);
+        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths, TEST_EMAIL, false);
 
         // Verify file Ids have been added in config
         const config = readYML(configPath);
@@ -449,7 +449,7 @@ describe("uploadRepo",  () => {
         expect(users[TEST_USER.email].secret_key).toStrictEqual(TEST_USER.iam_secret_key);
     });
 
-    test("repo Not In Config",  async () => {
+    test("repo Not In Config", async () => {
         const configData = {repos: {}};
         writeFile(configPath, yaml.safeDump(configData));
         const initUtilsObj = new initUtils(repoPath);
@@ -461,7 +461,7 @@ describe("uploadRepo",  () => {
             .mockResponseOnce(JSON.stringify({status: true}))
             .mockResponseOnce(JSON.stringify(TEST_REPO_RESPONSE));
 
-        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths,false, TEST_EMAIL);
+        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths, TEST_EMAIL, false);
 
         // Verify file Ids have been added in config
         const config = readYML(configPath);
@@ -477,7 +477,7 @@ describe("uploadRepo",  () => {
         expect(users[TEST_USER.email].secret_key).toStrictEqual(TEST_USER.iam_secret_key);
     });
 
-    test("Error in uploadRepoToServer",  async () => {
+    test("Error in uploadRepoToServer", async () => {
         // Write these files as putLogEvent is called when error occurs
         writeFile(userFilePath, yaml.safeDump({}));
         writeFile(sequenceTokenFilePath, yaml.safeDump({}));
@@ -491,7 +491,7 @@ describe("uploadRepo",  () => {
             .mockResponseOnce(JSON.stringify({status: true}))
             .mockResponseOnce(null);
 
-        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths, false, TEST_EMAIL);
+        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths, TEST_EMAIL, false);
 
         // Verify file Ids have been added in config
         const config = readYML(configPath);
