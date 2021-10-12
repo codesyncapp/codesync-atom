@@ -1,7 +1,10 @@
 import fs from "fs";
 import path from "path";
+import yaml from "js-yaml";
 
-import {DIFF_SOURCE} from "../../lib/constants";
+import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../lib/constants";
+import {readYML} from "../../lib/utils/common";
+import {diff_match_patch} from "diff-match-patch";
 
 export async function waitFor(seconds) {
     return await new Promise((r) => setTimeout(r, seconds*1000));
@@ -76,12 +79,12 @@ export const TEST_REPO_RESPONSE = {
     'repo_id': 123,
     'branch_id': 456,
     'file_path_and_id': {
-        "file_1": 1,
-        "directory/file_2": 2,
+        "file_1.js": 1,
+        "directory/file_2.js": 2,
     },
     'urls': {
-        "file_1": PRE_SIGNED_URL,
-        "directory/file_2": PRE_SIGNED_URL,
+        "file_1.js": PRE_SIGNED_URL,
+        "directory/file_2.js": PRE_SIGNED_URL,
     },
     'user': TEST_USER
 };
@@ -151,3 +154,53 @@ export function rmDir(dirPath) {
 export function writeFile(filePath, data) {
     fs.writeFileSync(filePath, data);
 }
+
+export class Config {
+
+    constructor(repoPath, configPath) {
+        this.repoPath = repoPath;
+        this.configPath = configPath;
+    }
+
+    addRepo = () => {
+        const config = {repos: {}};
+        config.repos[this.repoPath] = {
+            branches: {},
+            email: TEST_EMAIL
+        };
+        config.repos[this.repoPath].branches[DEFAULT_BRANCH] = {};
+        fs.writeFileSync(this.configPath, yaml.safeDump(config));
+    }
+
+    removeRepo = () => {
+        const config = {repos: {}};
+        fs.writeFileSync(this.configPath, yaml.safeDump(config));
+    }
+}
+
+export const assertChangeEvent = (repoPath, diffsRepo, oldText, updatedText,
+                                  fileRelPath, shadowFilePath,
+                                  diffsCount = 1) => {
+    // Read shadow file
+    const shadowText = fs.readFileSync(shadowFilePath, "utf8");
+    expect(shadowText).toStrictEqual(updatedText);
+    // Verify correct diff file has been generated
+    const diffFiles = fs.readdirSync(diffsRepo);
+    expect(diffFiles).toHaveLength(diffsCount);
+    const diffFilePath = path.join(diffsRepo, diffFiles[diffsCount-1]);
+    const diffData = readYML(diffFilePath);
+    expect(diffData.source).toEqual(DIFF_SOURCE);
+    expect(diffData.is_new_file).toBeFalsy();
+    expect(diffData.is_rename).toBeFalsy();
+    expect(diffData.is_deleted).toBeFalsy();
+    expect(diffData.repo_path).toEqual(repoPath);
+    expect(diffData.branch).toEqual(DEFAULT_BRANCH);
+    expect(diffData.file_relative_path).toEqual(fileRelPath);
+    // Verify diff is correct
+    const dmp = new diff_match_patch();
+    const patches = dmp.patch_make(oldText, updatedText);
+    //  Create text representation of patches objects
+    const diffs = dmp.patch_toText(patches);
+    expect(diffData.diff).toStrictEqual(diffs);
+    return true;
+};

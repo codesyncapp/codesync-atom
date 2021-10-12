@@ -103,7 +103,7 @@ describe("successfullySynced", () => {
         fs.rmSync(baseRepoPath, {recursive: true, force: true});
     });
 
-    test("Non-Synced Repo", () => {
+    test("Non Synced Repo", () => {
         const initUtilsObj = new initUtils(repoPath);
         const isSynced = initUtilsObj.successfullySynced();
         expect(isSynced).toBe(false);

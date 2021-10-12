@@ -1,12 +1,13 @@
 import fs from "fs";
 import path from "path";
+import yaml from "js-yaml";
 import untildify from "untildify";
 import getBranchName from "current-git-branch";
-import {diff_match_patch} from "diff-match-patch";
 
-import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../lib/constants";
+import {DEFAULT_BRANCH} from "../../../lib/constants";
 import {
-    buildAtomEnv,
+    assertChangeEvent,
+    buildAtomEnv, Config,
     DUMMY_FILE_CONTENT,
     getConfigFilePath,
     getSyncIgnoreFilePath,
@@ -15,8 +16,6 @@ import {
 } from "../../helpers/helpers";
 import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
-import yaml from "js-yaml";
-import {readYML} from "../../../lib/utils/common";
 
 
 describe("handleChangeEvent",  () => {
@@ -55,6 +54,9 @@ describe("handleChangeEvent",  () => {
         atom.project.getPaths.mockReturnValue([repoPath]);
         getBranchName.mockReturnValue(DEFAULT_BRANCH);
         // Create directories
+        fs.mkdirSync(baseRepoPath, { recursive: true });
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
         fs.mkdirSync(repoPath, { recursive: true });
         fs.mkdirSync(diffsRepo, { recursive: true });
         fs.mkdirSync(originalsRepoBranchPath, { recursive: true });
@@ -70,6 +72,8 @@ describe("handleChangeEvent",  () => {
     });
 
     test("Repo not synced", () => {
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.removeRepo();
         const handler = new eventHandler();
         const event = {};
         handler.handleChangeEvent(event);
@@ -80,9 +84,6 @@ describe("handleChangeEvent",  () => {
     });
 
     test("Synced repo, Ignorable file", () => {
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
         const handler = new eventHandler();
         const editor = {
             getPath: function () {
@@ -99,9 +100,6 @@ describe("handleChangeEvent",  () => {
     });
 
     test("Synced repo, shadow file does not exist", () => {
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
         const handler = new eventHandler();
         const editor = {
             getPath: function () {
@@ -112,15 +110,11 @@ describe("handleChangeEvent",  () => {
             }
         };
         handler.handleChangeEvent(editor);
-        expect(fs.existsSync(shadowFilePath)).toBe(true);
-        let diffFiles = fs.readdirSync(diffsRepo);
-        expect(diffFiles).toHaveLength(0);
+        expect(assertChangeEvent(repoPath, diffsRepo, "", DUMMY_FILE_CONTENT,
+            fileRelPath, shadowFilePath)).toBe(true);
     });
 
     test("Synced repo, file in .syncignore", () => {
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
         const handler = new eventHandler();
         const editor = {
             getPath: function () {
@@ -138,9 +132,6 @@ describe("handleChangeEvent",  () => {
 
     test("Synced repo, Shadow has same content", () => {
         fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
         const handler = new eventHandler();
         const editor = {
             getPath: function () {
@@ -158,9 +149,6 @@ describe("handleChangeEvent",  () => {
     test("Synced repo, Should add diff and update shadow file", () => {
         fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
         const updatedText = `${DUMMY_FILE_CONTENT} Changed data`;
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
         const handler = new eventHandler();
         const editor = {
             getPath: function () {
@@ -171,26 +159,7 @@ describe("handleChangeEvent",  () => {
             }
         };
         handler.handleChangeEvent(editor);
-        // Read shadow file
-        const shadowText = fs.readFileSync(shadowFilePath, "utf8");
-        expect(shadowText).toStrictEqual(updatedText);
-        const diffFiles = fs.readdirSync(diffsRepo);
-        expect(diffFiles).toHaveLength(1);
-        const diffFilePath = path.join(diffsRepo, diffFiles[0]);
-        const diffData = readYML(diffFilePath);
-        expect(diffData.source).toEqual(DIFF_SOURCE);
-        expect(diffData.is_new_file).toBeFalsy();
-        expect(diffData.is_rename).toBeFalsy();
-        expect(diffData.is_deleted).toBeFalsy();
-        expect(diffData.repo_path).toEqual(repoPath);
-        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
-        expect(diffData.file_relative_path).toEqual(fileRelPath);
-
-        // Verify diff is correct
-        const dmp = new diff_match_patch();
-        const patches = dmp.patch_make(DUMMY_FILE_CONTENT, updatedText);
-        //  Create text representation of patches objects
-        const diffs = dmp.patch_toText(patches);
-        expect(diffData.diff).toStrictEqual(diffs);
+        expect(assertChangeEvent(repoPath, diffsRepo, DUMMY_FILE_CONTENT, updatedText,
+            fileRelPath, shadowFilePath)).toBe(true);
     });
 });

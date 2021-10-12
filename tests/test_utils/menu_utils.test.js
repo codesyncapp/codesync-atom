@@ -11,6 +11,7 @@ import {
 } from "../../lib/utils/menu_utils";
 import {
     buildAtomEnv,
+    Config,
     getConfigFilePath,
     getUserFilePath,
     randomBaseRepoPath,
@@ -77,12 +78,11 @@ describe("generateMenu",  () => {
         expect(menuOptions[1]).toStrictEqual(MenuOptions.LOGOUT);
     });
 
-    test("User is connected: Repo Opened and not connected", () => {
+    test("User is connected: Repo Opened and connected", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
         atom.project.getPaths.mockReturnValue([repoPath]);
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
 
         const menu = generateMenu();
 
@@ -93,7 +93,6 @@ describe("generateMenu",  () => {
         expect(menuOptions[2]).toStrictEqual(MenuOptions.DISCONNECT_REPO);
         expect(menuOptions[3]).toStrictEqual(MenuOptions.LOGOUT);
     });
-
 });
 
 
@@ -158,9 +157,8 @@ describe("generateRightClickMenu",  () => {
     test("User is connected: Repo Opened and connected", () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
         atom.project.getPaths.mockReturnValue([repoPath]);
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
 
         const menu = generateRightClickMenu();
 

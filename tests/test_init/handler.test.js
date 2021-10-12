@@ -7,7 +7,7 @@ import {DEFAULT_BRANCH, GITIGNORE, NOTIFICATION} from "../../lib/constants";
 import fetchMock from "jest-fetch-mock";
 import {initHandler} from "../../lib/init/init_handler";
 import {
-    buildAtomEnv,
+    buildAtomEnv, Config,
     DUMMY_FILE_CONTENT,
     getConfigFilePath,
     getSeqTokenFilePath,
@@ -84,9 +84,9 @@ describe("initHandler",  () => {
                 .mockResponseOnce(JSON.stringify({ status: true }))
                 .mockResponseOnce(JSON.stringify(user));
             // Add repo in config
-            const _configData = JSON.parse(JSON.stringify(configData));
-            _configData.repos[repoPath] = {branches: {}};
-            fs.writeFileSync(configPath, yaml.safeDump(_configData));
+            const configUtil = new Config(repoPath, configPath);
+            configUtil.addRepo();
+
             await handler.syncRepo();
             // Verify error msg
             expect(atom.notifications.addWarning).toHaveBeenCalledTimes(1);

@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import yaml from "js-yaml";
 import untildify from "untildify";
 import getBranchName from "current-git-branch";
 
@@ -8,14 +7,21 @@ import {readYML} from "../../../lib/utils/common";
 import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../lib/constants";
-import {buildAtomEnv, getConfigFilePath, randomBaseRepoPath, randomRepoPath, waitFor} from "../../helpers/helpers";
+import {
+    buildAtomEnv,
+    Config,
+    getConfigFilePath,
+    randomBaseRepoPath,
+    randomRepoPath,
+    waitFor
+} from "../../helpers/helpers";
 
 describe("handleRenameFile",  () => {
     /*
      {
         source: 'vs-code',
         created_at: '2021-08-26 18:59:51.954',
-        diff: '{"old_abs_path":"tests/tests_data/test_repo_sNIVUqukDv/old.js","new_abs_path":"tests/tests_data/test_repo_sNIVUqukDv/new.js","old_rel_path":"old.js","new_rel_path":"new.js"}',
+        diff: '{"new_abs_path":"tests/tests_data/test_repo_sNIVUqukDv/new.js","old_rel_path":"old.js","new_rel_path":"new.js"}',
         repo_path: 'tests/tests_data/test_repo_sNIVUqukDv',
         branch: 'default',
         file_relative_path: 'new.js',
@@ -41,7 +47,6 @@ describe("handleRenameFile",  () => {
     // For directory rename
     const oldDirectoryPath = path.join(repoPath, "old");
     const newDirectoryPath = path.join(repoPath, "new");
-    const oldDirectoryFilePath = path.join(oldDirectoryPath, "file.js");
     const newDirectoryFilePath = path.join(newDirectoryPath, "file.js");
     const oldShadowDirectoryPath = path.join(shadowRepoBranchPath, "old");
     const renamedShadowDirectoryPath = path.join(shadowRepoBranchPath, "new");
@@ -55,6 +60,9 @@ describe("handleRenameFile",  () => {
         atom.project.getPaths.mockReturnValue([repoPath]);
         getBranchName.mockReturnValue(DEFAULT_BRANCH);
         // Create directories
+        fs.mkdirSync(baseRepoPath, { recursive: true });
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
         fs.mkdirSync(repoPath, { recursive: true });
         fs.mkdirSync(diffsRepo, { recursive: true });
 
@@ -75,8 +83,10 @@ describe("handleRenameFile",  () => {
     });
 
     test("Event: Repo is not synced",  () => {
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.removeRepo();
         const handler = new eventHandler();
-        handler.handleRenameEvent(newFilePath, newFilePath);
+        handler.handleRename(newFilePath, newFilePath);
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
@@ -85,27 +95,20 @@ describe("handleRenameFile",  () => {
     });
 
     test("Event: Synced repo, Ignorable file", () => {
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
         const itemPath = path.join(repoPath, ".git", "objects", "abcdef");
         const itemNewPath = path.join(repoPath, ".git", "objects", "12345");
         const handler = new eventHandler();
-        handler.handleRenameEvent(itemPath, itemNewPath);
+        handler.handleRename(itemPath, itemNewPath);
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
     });
 
     test("For File",  () => {
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
         // Write data to new file
         fs.writeFileSync(newFilePath, "use babel;");
-
         const handler = new eventHandler();
-        handler.handleRenameEvent(oldFilePath, newFilePath);
+        handler.handleRename(oldFilePath, newFilePath);
         // Verify file has been renamed in the shadow repo
         expect(fs.existsSync(renamedShadowFilePath)).toBe(true);
         // Verify correct diff file has been generated
@@ -120,21 +123,16 @@ describe("handleRenameFile",  () => {
         expect(diffData.repo_path).toEqual(repoPath);
         expect(diffData.branch).toEqual(DEFAULT_BRANCH);
         expect(diffData.file_relative_path).toEqual("new.js");
-        expect(JSON.parse(diffData.diff).old_abs_path).toEqual(oldFilePath);
-        expect(JSON.parse(diffData.diff).new_abs_path).toEqual(newFilePath);
         expect(JSON.parse(diffData.diff).old_rel_path).toEqual("old.js");
         expect(JSON.parse(diffData.diff).new_rel_path).toEqual("new.js");
     });
 
     test("for Directory",  async () => {
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
         // Write data to new file
         fs.writeFileSync(newFilePath, "use babel;");
 
         const handler = new eventHandler();
-        handler.handleRenameEvent(oldDirectoryPath, newDirectoryPath);
+        handler.handleRename(oldDirectoryPath, newDirectoryPath);
         await waitFor(1);
         expect(fs.existsSync(renamedShadowDirectoryPath)).toBe(true);
         expect(fs.existsSync(renamedShadowDirectoryFilePath)).toBe(true);
@@ -150,8 +148,6 @@ describe("handleRenameFile",  () => {
         expect(diffData.repo_path).toEqual(repoPath);
         expect(diffData.branch).toEqual(DEFAULT_BRANCH);
         expect(diffData.file_relative_path).toEqual(path.join("new", "file.js"));
-        expect(JSON.parse(diffData.diff).old_abs_path).toEqual(oldDirectoryFilePath);
-        expect(JSON.parse(diffData.diff).new_abs_path).toEqual(newDirectoryFilePath);
         expect(JSON.parse(diffData.diff).old_rel_path).toEqual(path.join("old", "file.js"));
         expect(JSON.parse(diffData.diff).new_rel_path).toEqual(path.join("new", "file.js"));
     });

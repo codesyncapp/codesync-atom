@@ -1,16 +1,19 @@
 import fs from "fs";
+import path from "path";
 import yaml from "js-yaml";
 import untildify from "untildify";
 import getBranchName from "current-git-branch";
-import fetchMock from "jest-fetch-mock";
+import {diff_match_patch} from "diff-match-patch";
 
-import {DEFAULT_BRANCH} from "../../lib/constants";
 import {pathUtils} from "../../lib/utils/path_utils";
 import {readYML} from "../../lib/utils/common";
-import {detectBranchChange} from "../../lib/codesyncd/populate_buffer";
-
+import {populateBuffer} from "../../lib/codesyncd/populate_buffer";
+import {createSystemDirectories} from "../../lib/utils/setup_utils";
+import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../lib/constants";
 import {
+    assertChangeEvent,
     buildAtomEnv,
+    DUMMY_FILE_CONTENT,
     getConfigFilePath,
     getSeqTokenFilePath,
     getUserFilePath,
@@ -20,13 +23,12 @@ import {
     TEST_REPO_RESPONSE,
     TEST_USER
 } from "../helpers/helpers";
+import {isBinaryFileSync} from "isbinaryfile";
 
 
-describe("detectBranchChange", () => {
+describe("populateBuffer", () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const configData = {repos: {}};
-
     const configPath = getConfigFilePath(baseRepoPath);
     const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {};
@@ -36,149 +38,42 @@ describe("detectBranchChange", () => {
     untildify.mockReturnValue(baseRepoPath);
 
     const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
-    const originalsRepoBranchPath = pathUtilsObj.getOriginalsRepoBranchPath();
     const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
+    const originalsRepoBranchPath = pathUtilsObj.getOriginalsRepoBranchPath();
+    const cacheRepoBranchPath = pathUtilsObj.getDeletedRepoBranchPath();
+    const diffsRepo = pathUtilsObj.getDiffsRepo();
+
+    const fileRelPath = "file_1.js";
+    const filePath = path.join(repoPath, fileRelPath);
+    const shadowFilePath = path.join(shadowRepoBranchPath, fileRelPath);
+    const newFilePath = path.join(repoPath, "new.js");
 
     beforeEach(() => {
         fetch.resetMocks();
         jest.clearAllMocks();
-        jest.spyOn(global.console, 'log');
         buildAtomEnv();
+        jest.spyOn(global.console, 'log');
+        atom.project.getPaths.mockReturnValue([repoPath]);
         untildify.mockReturnValue(baseRepoPath);
         fs.mkdirSync(baseRepoPath, {recursive: true});
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        fs.writeFileSync(sequenceTokenFilePath, yaml.safeDump({}));
+        createSystemDirectories();
         fs.mkdirSync(repoPath, {recursive: true});
     });
 
-    afterEach(() => {
-        fs.rmSync(repoPath, {recursive: true, force: true});
-        fs.rmSync(baseRepoPath, {recursive: true, force: true});
-    });
-
-    const assertValidUpload = (readyRepos) => {
-        const expectedReadyRepos = {};
-        expectedReadyRepos[repoPath] = DEFAULT_BRANCH;
-        expect(readyRepos).toStrictEqual(expectedReadyRepos);
-
-        // Verify file Ids have been added in config
-        const config = readYML(configPath);
-        expect(config.repos[repoPath].branches[DEFAULT_BRANCH]).toStrictEqual(TEST_REPO_RESPONSE.file_path_and_id);
-
-        // Verify sequence_token.yml
-        let users = readYML(sequenceTokenFilePath);
-        expect(users[TEST_EMAIL]).toStrictEqual("");
-
-        // verify user.yml
-        users = readYML(userFilePath);
-        expect(users[TEST_USER.email].access_key).toStrictEqual(TEST_USER.iam_access_key);
-        expect(users[TEST_USER.email].secret_key).toStrictEqual(TEST_USER.iam_secret_key);
-        // Verify no notification is shown as it is run on daemon
-        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
-        expect(atom.notifications.addWarning).toHaveBeenCalledTimes(0);
-        expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
-        return true;
-    };
-
-    test("No repo synced", async () => {
-        const readyRepos = await detectBranchChange();
-        expect(readyRepos).toStrictEqual({});
-    });
-
-    test("Repo is synced, but is_disconnected", async () => {
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: TEST_EMAIL,
-            is_disconnected: true
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
-        const readyRepos = await detectBranchChange();
-        expect(readyRepos).toStrictEqual({});
-    });
-
-    test("Repo is synced with account not in user.yml", async () => {
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: `another-${TEST_EMAIL}`
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
-        const readyRepos = await detectBranchChange();
-        expect(readyRepos).toStrictEqual({});
-    });
-
-    test("No access token in user.yml", async () => {
-        const _users = {};
-        _users[TEST_EMAIL] = {iam_access_key: "ABC"};
-        fs.writeFileSync(userFilePath, yaml.safeDump(_users));
-        jest.spyOn(global.console, 'log');
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: TEST_EMAIL
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
-        const readyRepos = await detectBranchChange();
-        expect(readyRepos).toStrictEqual({});
-        expect(console.log).toHaveBeenCalledTimes(1);
-    });
-
-    test("Actual repo exists, Shadow repo does not exist", async () => {
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: TEST_EMAIL
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
-        const readyRepos = await detectBranchChange();
-        expect(readyRepos).toStrictEqual({});
-        expect(console.log).toHaveBeenCalledTimes(0);
-    });
-
-    test("Actual repo has been deleted but shadow exists", async () => {
+    const addRepo = (deleteFile1=false) => {
         fs.mkdirSync(shadowRepoBranchPath, {recursive: true});
         getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
+        const configData = {repos: {}};
+        configData.repos[repoPath] = {
             branches: {},
             email: TEST_EMAIL
         };
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
-        fs.rmSync(repoPath, {recursive: true, force: true});
-
-        const readyRepos = await detectBranchChange();
-        expect(readyRepos).toStrictEqual({});
-        expect(console.log).toHaveBeenCalledTimes(0);
-    });
-
-    test("Repo is synced with same branch", async () => {
-        fs.mkdirSync(shadowRepoBranchPath, {recursive: true});
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: TEST_EMAIL
-        };
-        _configData.repos[repoPath].branches[DEFAULT_BRANCH] = {};
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
-        const readyRepos = await detectBranchChange();
-        expect(readyRepos).toStrictEqual({});
-        expect(console.log).toHaveBeenCalledTimes(0);
-    });
-
-    test("Repo is synced with same branch with valid file IDs", async () => {
-        fs.mkdirSync(shadowRepoBranchPath, {recursive: true});
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: TEST_EMAIL
-        };
-        _configData.repos[repoPath].branches[DEFAULT_BRANCH] = TEST_REPO_RESPONSE.file_path_and_id;
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
+        configData.repos[repoPath].branches[DEFAULT_BRANCH] = TEST_REPO_RESPONSE.file_path_and_id;
+        configData.repos[repoPath].branches[DEFAULT_BRANCH]["ignore.js"] = 12345;
+        if (deleteFile1) {
+            delete configData.repos[repoPath].branches[DEFAULT_BRANCH][fileRelPath];
+        }
+        fs.writeFileSync(configPath, yaml.safeDump(configData));
         // Update sequence_token.yml
         const users = {};
         users[TEST_EMAIL] = "";
@@ -190,70 +85,184 @@ describe("detectBranchChange", () => {
             secret_key: TEST_USER.iam_secret_key
         };
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        const readyRepos = await detectBranchChange();
-        expect(assertValidUpload(readyRepos)).toBe(true);
+    };
+
+    const assertNewFileEvent = (newRelPath, diffsCount = 1) => {
+        const originalsFilePath = path.join(originalsRepoBranchPath, newRelPath);
+        const shadowFilePath = path.join(shadowRepoBranchPath, newRelPath);
+        // Verify file has been created in the .shadow repo and .originals repos
+        expect(fs.existsSync(shadowFilePath)).toBe(true);
+        expect(fs.existsSync(originalsFilePath)).toBe(true);
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(diffsCount);
+        const diffFilePath = path.join(diffsRepo, diffFiles[diffsCount-1]);
+        const diffData = readYML(diffFilePath);
+        expect(diffData.source).toEqual(DIFF_SOURCE);
+        expect(diffData.is_new_file).toBe(true);
+        expect(diffData.is_rename).toBeFalsy();
+        expect(diffData.is_deleted).toBeFalsy();
+        expect(diffData.repo_path).toEqual(repoPath);
+        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
+        expect(diffData.file_relative_path).toEqual(newRelPath);
+        expect(diffData.diff).toEqual("");
+        return true;
+    };
+
+    const assertRenameEvent = (newRelPath, renamedPath, diffsCount = 1) => {
+        const renamedShadowFilePath = path.join(shadowRepoBranchPath, newRelPath);
+        // Verify file has been renamed in the shadow repo
+        expect(fs.existsSync(renamedShadowFilePath)).toBe(true);
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(diffsCount);
+        const diffFilePath = path.join(diffsRepo, diffFiles[diffsCount-1]);
+        const diffData = readYML(diffFilePath);
+        expect(diffData.source).toEqual(DIFF_SOURCE);
+        expect(diffData.is_rename).toBe(true);
+        expect(diffData.is_new_file).toBeFalsy();
+        expect(diffData.is_deleted).toBeFalsy();
+        expect(diffData.repo_path).toEqual(repoPath);
+        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
+        expect(diffData.file_relative_path).toEqual(newRelPath);
+        expect(JSON.parse(diffData.diff).old_rel_path).toEqual(fileRelPath);
+        expect(JSON.parse(diffData.diff).new_rel_path).toEqual(newRelPath);
+        return true;
+    };
+
+    afterEach(() => {
+        fs.rmSync(repoPath, {recursive: true, force: true});
+        fs.rmSync(baseRepoPath, {recursive: true, force: true});
     });
 
-    test("Repo is synced with same branch with null file IDs", async () => {
-        fs.mkdirSync(shadowRepoBranchPath, {recursive: true});
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: TEST_EMAIL
-        };
-        _configData.repos[repoPath].branches[DEFAULT_BRANCH] = {
-            "file_1.js": null,
-            "directory/file_2.js": null
-        };
-
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
-
-        // Mock response for checkServerDown and uploadRepo
-        fetchMock
-            .mockResponseOnce(JSON.stringify({status: true}))
-            .mockResponseOnce(JSON.stringify(TEST_REPO_RESPONSE));
-
-        const readyRepos = await detectBranchChange();
-        expect(assertValidUpload(readyRepos)).toBe(true);
+    test("No repo synced", async () => {
+        await populateBuffer();
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        // Verify correct diff file has been generated
+        expect(diffFiles).toHaveLength(0);
     });
 
-    test("Repo is not synced with given branch", async () => {
-        fs.mkdirSync(shadowRepoBranchPath, {recursive: true});
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: TEST_EMAIL
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
-
-        fetchMock
-            .mockResponseOnce(JSON.stringify({status: true}))
-            .mockResponseOnce(JSON.stringify(userData))
-            .mockResponseOnce(JSON.stringify({status: true}))
-            .mockResponseOnce(JSON.stringify(TEST_REPO_RESPONSE));
-
-        const readyRepos = await detectBranchChange();
-        expect(assertValidUpload(readyRepos)).toBe(true);
+    test("Repo synced, no change in data", async () => {
+        addRepo();
+        await populateBuffer();
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        // Verify correct diff file has been generated
+        expect(diffFiles).toHaveLength(0);
     });
 
-    test("Repo is not synced with given branch but .originals branch repo exists", async () => {
-        fs.mkdirSync(shadowRepoBranchPath, {recursive: true});
-        fs.mkdirSync(originalsRepoBranchPath, {recursive: true});
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const _configData = {repos: {}};
-        _configData.repos[repoPath] = {
-            branches: {},
-            email: TEST_EMAIL
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(_configData));
+    test("Changes occurred, shadow file does not exist", async () => {
+        addRepo();
+        fs.writeFileSync(filePath, DUMMY_FILE_CONTENT);
+        await populateBuffer();
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        // Verify correct diff file has been generated
+        expect(assertChangeEvent(repoPath, diffsRepo, "", DUMMY_FILE_CONTENT,
+            fileRelPath, shadowFilePath)).toBe(true);
+    });
 
-        fetchMock
-            .mockResponseOnce(JSON.stringify({status: true}))
-            .mockResponseOnce(JSON.stringify(TEST_REPO_RESPONSE));
+    test("Changes occurred, shadow file exists", async () => {
+        addRepo();
+        fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
+        const updatedText = `${DUMMY_FILE_CONTENT} Changed data`;
+        fs.writeFileSync(filePath, updatedText);
+        await populateBuffer();
+        expect(assertChangeEvent(repoPath, diffsRepo,
+            DUMMY_FILE_CONTENT, updatedText, fileRelPath, shadowFilePath)).toBe(true);
+    });
 
-        const readyRepos = await detectBranchChange();
-        expect(assertValidUpload(readyRepos)).toBe(true);
+    test("New File", async () => {
+        addRepo();
+        fs.writeFileSync(newFilePath, DUMMY_FILE_CONTENT);
+        await populateBuffer();
+        expect(assertNewFileEvent("new.js")).toBe(true);
+    });
+
+    test("New Binary File", async () => {
+        isBinaryFileSync.mockReturnValueOnce(true);
+        addRepo();
+        const newRelPath = 'image.png';
+        const newFilePath = path.join(repoPath, newRelPath);
+        const img = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0"
+            + "NAAAAKElEQVQ4jWNgYGD4Twzu6FhFFGYYNXDUwGFpIAk2E4dHDRw1cDgaCAASFOffhEIO"
+            + "3gAAAABJRU5ErkJggg==";
+        // strip off the data: url prefix to get just the base64-encoded bytes
+        var data = img.replace(/^data:image\/\w+;base64,/, "");
+        var buf = Buffer.from(data, 'base64');
+        fs.writeFileSync(newFilePath, buf);
+        await populateBuffer();
+        expect(assertNewFileEvent(newRelPath)).toBe(true);
+    });
+
+    test("Rename event", async () => {
+        addRepo();
+        fs.writeFileSync(filePath, DUMMY_FILE_CONTENT);
+        fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
+        const newRelPath = "renamed-file.js";
+        const renamedPath = path.join(repoPath, newRelPath);
+        fs.renameSync(filePath, renamedPath);
+        await populateBuffer();
+        expect(assertRenameEvent(newRelPath, renamedPath)).toBe(true);
+    });
+
+    test("Rename event for empty file, should treat as new file", async () => {
+        addRepo();
+        fs.writeFileSync(filePath, "");
+        const newRelPath = "renamed-file.js";
+        const renamedPath = path.join(repoPath, newRelPath);
+        fs.renameSync(filePath, renamedPath);
+        await populateBuffer();
+        expect(assertNewFileEvent(newRelPath)).toBe(true);
+    });
+
+    test("Delete event", async () => {
+        addRepo();
+        fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
+        await populateBuffer();
+        const cacheFilePath = path.join(cacheRepoBranchPath, fileRelPath);
+        // Verify that file is copied to .delete directory
+        expect(fs.existsSync(cacheFilePath)).toBe(true);
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(1);
+        const diffFilePath = path.join(diffsRepo, diffFiles[0]);
+        const diffData = readYML(diffFilePath);
+        expect(diffData.source).toEqual(DIFF_SOURCE);
+        expect(diffData.is_rename).toBeFalsy();
+        expect(diffData.is_new_file).toBeFalsy();
+        expect(diffData.is_deleted).toBe(true);
+        expect(diffData.repo_path).toEqual(repoPath);
+        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
+        expect(diffData.file_relative_path).toEqual(fileRelPath);
+        expect(diffData.diff).toStrictEqual("");
+    });
+
+    test("New File -> Edit -> Rename -> Edit", async () => {
+        addRepo(true);
+        // New File
+        fs.writeFileSync(filePath, DUMMY_FILE_CONTENT);
+        await populateBuffer();
+        expect(assertNewFileEvent(fileRelPath)).toBe(true);
+        // Edit
+        let updatedText = `${DUMMY_FILE_CONTENT} Changed data`;
+        fs.writeFileSync(filePath, updatedText);
+        await populateBuffer();
+        expect(assertChangeEvent(repoPath, diffsRepo, DUMMY_FILE_CONTENT, updatedText,
+            fileRelPath, shadowFilePath, 2)).toBe(true);
+        // Rename
+        const newRelPath = "renamed-file.js";
+        const renamedPath = path.join(repoPath, newRelPath);
+        const renamedShadowPath = path.join(shadowRepoBranchPath, newRelPath);
+        fs.renameSync(filePath, renamedPath);
+        await populateBuffer();
+        expect(assertRenameEvent(newRelPath, renamedPath, 3)).toBe(true);
+        // Edit
+        const anotherUpdatedText = `${updatedText}\nAnother update to text`;
+        fs.writeFileSync(renamedPath, anotherUpdatedText);
+        await populateBuffer();
+        expect(assertChangeEvent(repoPath, diffsRepo, updatedText, anotherUpdatedText,
+            newRelPath, renamedShadowPath, 4)).toBe(true);
     });
 });
