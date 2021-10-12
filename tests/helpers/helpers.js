@@ -5,6 +5,7 @@ import yaml from "js-yaml";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../lib/constants";
 import {readYML} from "../../lib/utils/common";
 import {diff_match_patch} from "diff-match-patch";
+import {pathUtils} from "../../lib/utils/path_utils";
 
 export async function waitFor(seconds) {
     return await new Promise((r) => setTimeout(r, seconds*1000));
@@ -75,11 +76,13 @@ export const TEST_USER = {
     iam_secret_key: "iam_secret_key",
 };
 
+export const FILE_ID = 1234;
+
 export const TEST_REPO_RESPONSE = {
     'repo_id': 123,
     'branch_id': 456,
     'file_path_and_id': {
-        "file_1.js": 1,
+        "file_1.js": FILE_ID,
         "directory/file_2.js": 2,
     },
     'urls': {
@@ -168,7 +171,7 @@ export class Config {
             branches: {},
             email: TEST_EMAIL
         };
-        config.repos[this.repoPath].branches[DEFAULT_BRANCH] = {};
+        config.repos[this.repoPath].branches[DEFAULT_BRANCH] = TEST_REPO_RESPONSE.file_path_and_id;
         fs.writeFileSync(this.configPath, yaml.safeDump(config));
     }
 
@@ -202,5 +205,36 @@ export const assertChangeEvent = (repoPath, diffsRepo, oldText, updatedText,
     //  Create text representation of patches objects
     const diffs = dmp.patch_toText(patches);
     expect(diffData.diff).toStrictEqual(diffs);
+    return true;
+};
+
+export const assertRenameEvent = (repoPath, configPath, oldRelPath, newRelPath,
+                                  diffsCount = 1, assertID = true) => {
+
+    const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
+    const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
+    const diffsRepo = pathUtilsObj.getDiffsRepo();
+
+    const renamedShadowFilePath = path.join(shadowRepoBranchPath, newRelPath);
+    // Verify file has been renamed in the shadow repo
+    expect(fs.existsSync(renamedShadowFilePath)).toBe(true);
+    // Verify correct diff file has been generated
+    let diffFiles = fs.readdirSync(diffsRepo);
+    expect(diffFiles).toHaveLength(diffsCount);
+    const diffFilePath = path.join(diffsRepo, diffFiles[diffsCount-1]);
+    const diffData = readYML(diffFilePath);
+    expect(diffData.source).toEqual(DIFF_SOURCE);
+    expect(diffData.is_rename).toBe(true);
+    expect(diffData.is_new_file).toBeFalsy();
+    expect(diffData.is_deleted).toBeFalsy();
+    expect(diffData.repo_path).toEqual(repoPath);
+    expect(diffData.branch).toEqual(DEFAULT_BRANCH);
+    expect(diffData.file_relative_path).toEqual(newRelPath);
+    expect(JSON.parse(diffData.diff).old_rel_path).toEqual(oldRelPath);
+    expect(JSON.parse(diffData.diff).new_rel_path).toEqual(newRelPath);
+    if (assertID) {
+        const configJSON = readYML(configPath);
+        expect(configJSON.repos[repoPath].branches[DEFAULT_BRANCH][newRelPath]).toStrictEqual(FILE_ID);
+    }
     return true;
 };

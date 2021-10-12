@@ -3,7 +3,7 @@ import path from "path";
 import yaml from "js-yaml";
 import untildify from "untildify";
 import getBranchName from "current-git-branch";
-import {diff_match_patch} from "diff-match-patch";
+import {isBinaryFileSync} from "isbinaryfile";
 
 import {pathUtils} from "../../lib/utils/path_utils";
 import {readYML} from "../../lib/utils/common";
@@ -11,7 +11,7 @@ import {populateBuffer} from "../../lib/codesyncd/populate_buffer";
 import {createSystemDirectories} from "../../lib/utils/setup_utils";
 import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../lib/constants";
 import {
-    assertChangeEvent,
+    assertChangeEvent, assertRenameEvent,
     buildAtomEnv,
     DUMMY_FILE_CONTENT,
     getConfigFilePath,
@@ -23,7 +23,6 @@ import {
     TEST_REPO_RESPONSE,
     TEST_USER
 } from "../helpers/helpers";
-import {isBinaryFileSync} from "isbinaryfile";
 
 
 describe("populateBuffer", () => {
@@ -109,27 +108,6 @@ describe("populateBuffer", () => {
         return true;
     };
 
-    const assertRenameEvent = (newRelPath, renamedPath, diffsCount = 1) => {
-        const renamedShadowFilePath = path.join(shadowRepoBranchPath, newRelPath);
-        // Verify file has been renamed in the shadow repo
-        expect(fs.existsSync(renamedShadowFilePath)).toBe(true);
-        // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
-        expect(diffFiles).toHaveLength(diffsCount);
-        const diffFilePath = path.join(diffsRepo, diffFiles[diffsCount-1]);
-        const diffData = readYML(diffFilePath);
-        expect(diffData.source).toEqual(DIFF_SOURCE);
-        expect(diffData.is_rename).toBe(true);
-        expect(diffData.is_new_file).toBeFalsy();
-        expect(diffData.is_deleted).toBeFalsy();
-        expect(diffData.repo_path).toEqual(repoPath);
-        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
-        expect(diffData.file_relative_path).toEqual(newRelPath);
-        expect(JSON.parse(diffData.diff).old_rel_path).toEqual(fileRelPath);
-        expect(JSON.parse(diffData.diff).new_rel_path).toEqual(newRelPath);
-        return true;
-    };
-
     afterEach(() => {
         fs.rmSync(repoPath, {recursive: true, force: true});
         fs.rmSync(baseRepoPath, {recursive: true, force: true});
@@ -204,7 +182,7 @@ describe("populateBuffer", () => {
         const renamedPath = path.join(repoPath, newRelPath);
         fs.renameSync(filePath, renamedPath);
         await populateBuffer();
-        expect(assertRenameEvent(newRelPath, renamedPath)).toBe(true);
+        expect(assertRenameEvent(repoPath, configPath, fileRelPath, newRelPath)).toBe(true);
     });
 
     test("Rename event for empty file, should treat as new file", async () => {
@@ -257,7 +235,9 @@ describe("populateBuffer", () => {
         const renamedShadowPath = path.join(shadowRepoBranchPath, newRelPath);
         fs.renameSync(filePath, renamedPath);
         await populateBuffer();
-        expect(assertRenameEvent(newRelPath, renamedPath, 3)).toBe(true);
+        expect(assertRenameEvent(repoPath, configPath, fileRelPath, newRelPath, 3, false)).toBe(true);
+        const configJSON = readYML(configPath);
+        expect(configJSON.repos[repoPath].branches[DEFAULT_BRANCH][newRelPath]).toStrictEqual(null);
         // Edit
         const anotherUpdatedText = `${updatedText}\nAnother update to text`;
         fs.writeFileSync(renamedPath, anotherUpdatedText);
