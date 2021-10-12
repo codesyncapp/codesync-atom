@@ -39,8 +39,9 @@ describe("showChooseAccount",  () => {
     });
 
     test("with valid user",  async () => {
-        await showChooseAccount(repoPath);
+        const handler = await showChooseAccount(repoPath);
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
+        expect(handler.accessToken).toStrictEqual(userData[TEST_EMAIL].access_token);
         // TODO: In case we activate choose account option
         // expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         // expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);

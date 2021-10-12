@@ -8,7 +8,10 @@ import {
     getUserFilePath,
     randomBaseRepoPath,
     randomRepoPath,
-    rmDir, mkDir, writeFile
+    rmDir,
+    mkDir,
+    writeFile,
+    Config
 } from "../helpers/helpers";
 import {getRepoInSyncMsg, NOTIFICATION} from "../../lib/constants";
 import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../lib/utils/setup_utils";
@@ -118,7 +121,8 @@ describe("setupCodeSync",  () => {
 
     test('with synced repo',  async () => {
         writeFile(userFilePath, yaml.safeDump(userData));
-        writeFile(configPath, yaml.safeDump(configData));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeFalsy();

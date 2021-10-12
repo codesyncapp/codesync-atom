@@ -16,7 +16,14 @@ import {
     unSyncHandler
 } from "../lib/handlers/commands_handler";
 import {createSystemDirectories} from "../lib/utils/setup_utils";
-import {buildAtomEnv, getConfigFilePath, getUserFilePath, randomBaseRepoPath, randomRepoPath} from "./helpers/helpers";
+import {
+    buildAtomEnv,
+    Config,
+    getConfigFilePath,
+    getUserFilePath,
+    randomBaseRepoPath,
+    randomRepoPath
+} from "./helpers/helpers";
 import {logout} from "../lib/utils/auth_utils";
 import {UnsyncRepoView} from "../lib/views";
 
@@ -151,8 +158,10 @@ describe("Extension",() => {
     });
 
     test("With user, repo is in sync", async () => {
+        fs.mkdirSync(baseRepoPath, { recursive: true });
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
         atom.project.getPaths.mockReturnValue([repoPath]);
         await extension.activate({});
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);

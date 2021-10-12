@@ -2,7 +2,7 @@ import fs from "fs";
 import yaml from "js-yaml";
 import untildify from "untildify";
 import {isRepoSynced} from "../../../lib/events/utils";
-import {getConfigFilePath, randomBaseRepoPath, randomRepoPath} from "../../helpers/helpers";
+import {Config, getConfigFilePath, randomBaseRepoPath, randomRepoPath} from "../../helpers/helpers";
 
 
 describe("isRepoSynced", () => {
@@ -35,9 +35,8 @@ describe("isRepoSynced", () => {
     });
 
     test("with repo in config.yml", () => {
-        const config = {'repos': {}};
-        config.repos[repoPath] = {'branches': {}};
-        fs.writeFileSync(configPath, yaml.safeDump(config));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
         expect(isRepoSynced(repoPath)).toBe(true);
     });
 

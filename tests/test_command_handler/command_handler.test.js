@@ -13,7 +13,7 @@ import {
     unSyncHandler
 } from "../../lib/handlers/commands_handler";
 import {
-    buildAtomEnv, getConfigFilePath, getUserFilePath,
+    buildAtomEnv, Config, getConfigFilePath, getUserFilePath,
     randomBaseRepoPath,
     randomRepoPath,
     TEST_EMAIL
@@ -81,8 +81,8 @@ describe("SyncHandler", () => {
     });
 
     test("repo In Config", () => {
-        configData.repos[repoPath] = {branches: {}};
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
         atom.project.getPaths.mockReturnValueOnce([repoPath]);
         SyncHandler();
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
@@ -179,12 +179,8 @@ describe("postSelectionUnsync", () => {
 
     test("Unsyncing error from server", async () => {
         atom.project.getPaths.mockReturnValueOnce([repoPath]);
-        configData.repos[repoPath] = {
-            id: 12345,
-            email: TEST_EMAIL,
-            branches: {}
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
         fetchMock.mockResponseOnce(JSON.stringify({error: "NOT SO FAST"}));
 
         await postSelectionUnsync(repoPath, atom.notifications.addInfo());
@@ -196,12 +192,8 @@ describe("postSelectionUnsync", () => {
 
     test("Synced successfully", async () => {
         atom.project.getPaths.mockReturnValueOnce([repoPath]);
-        configData.repos[repoPath] = {
-            id: 12345,
-            email: TEST_EMAIL,
-            branches: {}
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
         fetchMock.mockResponseOnce(JSON.stringify({}));
 
         await postSelectionUnsync(repoPath, atom.notifications.addWarning());
