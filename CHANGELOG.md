@@ -4,17 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.26.14] - 2021-10-13
-### Fixed
-- fs.rmSync -> fs.unlinkSync
-
-## [2.26.13] - 2021-10-13
-### Fixed
-- Fixes for rename to nested directory
-
 ## [2.26.12] - 2021-10-13
 ### Fixed
+- Fixes for rename to nested directory
 - Renaming only if shadow exists
+- fs.rmSync -> fs.unlinkSync
 
 ## [2.26.11] - 2021-10-13
 ### Added
