@@ -1,10 +1,9 @@
 import fs from "fs";
 import path from "path";
 import untildify from "untildify";
-import {DATETIME_FORMAT, DEFAULT_BRANCH} from "../../../lib/constants";
+import {DEFAULT_BRANCH} from "../../../lib/constants";
 import {mkDir, randomBaseRepoPath, randomRepoPath, rmDir} from "../../helpers/helpers";
-import dateFormat from "dateformat";
-import {readYML} from "../../../lib/utils/common";
+import {formatDatetime, readYML} from "../../../lib/utils/common";
 import {DIFF_SOURCE} from "../../../lib/constants";
 import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
@@ -44,7 +43,7 @@ describe("addDiff", () => {
     });
 
     test("with createdAt",() => {
-        const createdAt = dateFormat(new Date(), DATETIME_FORMAT);
+        const createdAt = formatDatetime();
         const handler = new eventHandler(repoPath, createdAt);
         handler.addDiff(newFilePath, "diff");
         // Verify no diff file should be generated
