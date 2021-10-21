@@ -8,7 +8,7 @@
     }
   },
   "main": "./lib/codesync",
-  "version": "2.26.16",
+  "version": "2.26.17",
   "description": "Stream all code changes to the cloud, in real-time. Never lose code again - no commits needed.",
   "icon": "https://codesync-images.s3.amazonaws.com/icon.png",
   "keywords": [],
