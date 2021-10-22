@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
 import untildify from "untildify";
-import {readYML} from "../../../lib/utils/common";
-import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../lib/constants";
+import {DEFAULT_BRANCH} from "../../../lib/constants";
 import {
+    assertNewFileEvent,
     buildAtomEnv, Config, getConfigFilePath,
     getSyncIgnoreFilePath,
     mkDir,
@@ -14,6 +14,7 @@ import {
 } from "../../helpers/helpers";
 import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
+import {populateBuffer} from "../../../lib/codesyncd/populate_buffer";
 
 describe("handleCreate",  () => {
     /*
@@ -41,11 +42,12 @@ describe("handleCreate",  () => {
     const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
     const originalsRepoBranchPath = pathUtilsObj.getOriginalsRepoBranchPath();
 
-    const newFilePath = path.join(repoPath, "new.js");
+    const newRelPath = "new.js";
+    const newFilePath = path.join(repoPath, newRelPath);
     const newDirectoryPath = path.join(repoPath, "new");
     const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
-    const shadowFilePath = path.join(shadowRepoBranchPath, "new.js");
-    const originalsFilePath = path.join(originalsRepoBranchPath, "new.js");
+    const shadowFilePath = path.join(shadowRepoBranchPath, newRelPath);
+    const originalsFilePath = path.join(originalsRepoBranchPath, newRelPath);
     const syncIgnoreData = ".git\n\n\n.skip_repo_1\nignore.js";
     const ignorableFilePath = path.join(repoPath, "ignore.js");
 
@@ -97,22 +99,14 @@ describe("handleCreate",  () => {
     test("Valid File",  () => {
         const handler = new eventHandler();
         handler.handleCreate(newFilePath);
-        // Verify file has been created in the .shadow repo and .originals repos
-        expect(fs.existsSync(shadowFilePath)).toBe(true);
-        expect(fs.existsSync(originalsFilePath)).toBe(true);
-        // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
-        expect(diffFiles).toHaveLength(1);
-        const diffFilePath = path.join(diffsRepo, diffFiles[0]);
-        const diffData = readYML(diffFilePath);
-        expect(diffData.source).toEqual(DIFF_SOURCE);
-        expect(diffData.is_new_file).toBe(true);
-        expect(diffData.is_rename).toBeFalsy();
-        expect(diffData.is_deleted).toBeFalsy();
-        expect(diffData.repo_path).toEqual(repoPath);
-        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
-        expect(diffData.file_relative_path).toEqual("new.js");
-        expect(diffData.diff).toEqual("");
+        expect(assertNewFileEvent(repoPath, newRelPath)).toBe(true);
+    });
+
+    test("With Daemon: Valid File",  async () => {
+        const handler = new eventHandler();
+        handler.handleCreate(newFilePath);
+        await populateBuffer();
+        expect(assertNewFileEvent(repoPath, newRelPath)).toBe(true);
     });
 
     test("with syncignored file", () => {

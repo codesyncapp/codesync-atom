@@ -11,11 +11,14 @@ import {
     DUMMY_FILE_CONTENT,
     getConfigFilePath,
     getSyncIgnoreFilePath,
+    getUserFilePath,
     randomBaseRepoPath,
-    randomRepoPath
+    randomRepoPath,
+    TEST_EMAIL
 } from "../../helpers/helpers";
 import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
+import {populateBuffer} from "../../../lib/codesyncd/populate_buffer";
 
 
 describe("handleChangeEvent",  () => {
@@ -40,12 +43,13 @@ describe("handleChangeEvent",  () => {
     const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
     const originalsRepoBranchPath = pathUtilsObj.getOriginalsRepoBranchPath();
 
-    const fileRelPath = "file.js";
+    const fileRelPath = "file_1.js";
     const filePath = path.join(repoPath, fileRelPath);
     const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
     const shadowFilePath = path.join(shadowRepoBranchPath, fileRelPath);
     const syncIgnoreData = ".git\n\n\n.skip_repo_1\nignore.js";
     const ignorableFilePath = path.join(repoPath, "ignore.js");
+    const ignorableShadowFilePath = path.join(shadowRepoBranchPath, "ignore.js");
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -64,6 +68,12 @@ describe("handleChangeEvent",  () => {
         fs.writeFileSync(filePath, DUMMY_FILE_CONTENT);
         fs.writeFileSync(ignorableFilePath, "use babel;");
         fs.writeFileSync(syncIgnorePath, syncIgnoreData);
+        const userFilePath = getUserFilePath(baseRepoPath);
+        const userData = {};
+        userData[TEST_EMAIL] = {access_token: "ABC"};
+        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        const shadowSyncIgnore = path.join(shadowRepoBranchPath, ".syncignore");
+        fs.writeFileSync(shadowSyncIgnore, syncIgnoreData);
     });
 
     afterEach(() => {
@@ -71,35 +81,39 @@ describe("handleChangeEvent",  () => {
         fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
-    test("Repo not synced", () => {
+    test("Repo not synced", async () => {
         const configUtil = new Config(repoPath, configPath);
         configUtil.removeRepo();
         const handler = new eventHandler();
         const event = {};
         handler.handleChangeEvent(event);
+        await populateBuffer();
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
         expect(fs.existsSync(shadowFilePath)).toBe(false);
     });
 
-    test("Synced repo, Ignorable file", () => {
+    test("Synced repo, Ignorable file", async () => {
+        fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
+        const ignorablePath = path.join(repoPath, ".idea");
         const handler = new eventHandler();
         const editor = {
             getPath: function () {
-                return path.join(repoPath, ".idea");
+                return ignorablePath;
             },
             getText: function () {
                 return DUMMY_FILE_CONTENT;
             }
         };
         handler.handleChangeEvent(editor);
+        await populateBuffer();
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
-        expect(fs.existsSync(shadowFilePath)).toBe(false);
+        expect(fs.existsSync(ignorablePath)).toBe(false);
     });
 
-    test("Synced repo, shadow file does not exist", () => {
+    test("Synced repo, shadow file does not exist", async () => {
         const handler = new eventHandler();
         const editor = {
             getPath: function () {
@@ -110,11 +124,15 @@ describe("handleChangeEvent",  () => {
             }
         };
         handler.handleChangeEvent(editor);
+        await populateBuffer();
+
         expect(assertChangeEvent(repoPath, diffsRepo, "", DUMMY_FILE_CONTENT,
             fileRelPath, shadowFilePath)).toBe(true);
     });
 
-    test("Synced repo, file in .syncignore", () => {
+    test("Synced repo, file in .syncignore", async () => {
+        fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
+
         const handler = new eventHandler();
         const editor = {
             getPath: function () {
@@ -125,12 +143,14 @@ describe("handleChangeEvent",  () => {
             }
         };
         handler.handleChangeEvent(editor);
-        expect(fs.existsSync(shadowFilePath)).toBe(false);
+        await populateBuffer();
+
+        expect(fs.existsSync(ignorableShadowFilePath)).toBe(false);
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
     });
 
-    test("Synced repo, Shadow has same content", () => {
+    test("Synced repo, Shadow has same content", async () => {
         fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
         const handler = new eventHandler();
         const editor = {
@@ -142,6 +162,8 @@ describe("handleChangeEvent",  () => {
             }
         };
         handler.handleChangeEvent(editor);
+        await populateBuffer();
+
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
     });
@@ -159,6 +181,24 @@ describe("handleChangeEvent",  () => {
             }
         };
         handler.handleChangeEvent(editor);
+        expect(assertChangeEvent(repoPath, diffsRepo, DUMMY_FILE_CONTENT, updatedText,
+            fileRelPath, shadowFilePath)).toBe(true);
+    });
+
+    test("With Daemon: Synced repo, Should add diff and update shadow file", async () => {
+        fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
+        const updatedText = `${DUMMY_FILE_CONTENT} Changed data`;
+        const handler = new eventHandler();
+        const editor = {
+            getPath: function () {
+                return filePath;
+            },
+            getText: function () {
+                return updatedText;
+            }
+        };
+        handler.handleChangeEvent(editor);
+        await populateBuffer(true);
         expect(assertChangeEvent(repoPath, diffsRepo, DUMMY_FILE_CONTENT, updatedText,
             fileRelPath, shadowFilePath)).toBe(true);
     });

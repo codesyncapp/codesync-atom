@@ -16,6 +16,7 @@ import {
     randomRepoPath, TEST_EMAIL,
     waitFor
 } from "../../helpers/helpers";
+import {populateBuffer} from "../../../lib/codesyncd/populate_buffer";
 
 describe("handleRenameFile",  () => {
     /*
@@ -40,12 +41,13 @@ describe("handleRenameFile",  () => {
     const diffsRepo = pathUtilsObj.getDiffsRepo();
 
     const fileRelPath = "file_1.js";
+    const newRelPath = "new.js";
 
     // For file rename
     const oldFilePath = path.join(repoPath, fileRelPath);
-    const newFilePath = path.join(repoPath, "new.js");
+    const newFilePath = path.join(repoPath, newRelPath);
     const oldShadowFilePath = path.join(shadowRepoBranchPath, fileRelPath);
-    const renamedShadowFilePath = path.join(shadowRepoBranchPath, "new.js");
+    const renamedShadowFilePath = path.join(shadowRepoBranchPath, newRelPath);
 
     // For directory rename
     // "old/file.js" -> "new/file.js"
@@ -109,7 +111,16 @@ describe("handleRenameFile",  () => {
         fs.writeFileSync(newFilePath, "use babel;");
         const handler = new eventHandler();
         handler.handleRename(oldFilePath, newFilePath);
-        expect(assertRenameEvent(repoPath, configPath, fileRelPath, "new.js")).toBe(true);
+        expect(assertRenameEvent(repoPath, configPath, fileRelPath, newRelPath)).toBe(true);
+    });
+
+    test("With Daemon: For File",  async () => {
+        // Write data to new file
+        fs.writeFileSync(newFilePath, "use babel;");
+        const handler = new eventHandler();
+        await populateBuffer();
+        handler.handleRename(oldFilePath, newFilePath);
+        expect(assertRenameEvent(repoPath, configPath, fileRelPath, newRelPath)).toBe(true);
     });
 
     test("For file renamed to nested directory",  () => {

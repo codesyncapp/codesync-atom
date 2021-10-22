@@ -3,11 +3,11 @@ import path from "path";
 import untildify from "untildify";
 import getBranchName from "current-git-branch";
 
-import {readYML} from "../../../lib/utils/common";
 import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
-import {DEFAULT_BRANCH, DIFF_SOURCE} from "../../../lib/constants";
+import {DEFAULT_BRANCH} from "../../../lib/constants";
 import {
+    assertFileDeleteEvent,
     buildAtomEnv,
     Config,
     getConfigFilePath,
@@ -15,6 +15,7 @@ import {
     randomRepoPath,
     waitFor
 } from "../../helpers/helpers";
+import {populateBuffer} from "../../../lib/codesyncd/populate_buffer";
 
 describe("handleDelete",  () => {
     /*
@@ -38,19 +39,19 @@ describe("handleDelete",  () => {
     const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
     const diffsRepo = pathUtilsObj.getDiffsRepo();
 
+    const fileRelPath = "file_1.js";
     // For file
-    const filePath = path.join(repoPath, "file.js");
+    const filePath = path.join(repoPath, fileRelPath);
     const cacheRepoBranchPath = pathUtilsObj.getDeletedRepoBranchPath();
-    const cacheFilePath = path.join(cacheRepoBranchPath, "file.js");
-    const shadowFilePath = path.join(shadowRepoBranchPath, "file.js");
+    const cacheFilePath = path.join(cacheRepoBranchPath, fileRelPath);
+    const shadowFilePath = path.join(shadowRepoBranchPath, fileRelPath);
 
     // For directory
     const directoryPath = path.join(repoPath, "directory");
-    const directoryFilePath = path.join(directoryPath, "file.js");
-    const relFilePath = path.join("directory", "file.js");
+    const directoryFilePath = path.join(directoryPath, fileRelPath);
+    const dirFileRelPath = path.join("directory", fileRelPath);
     const shadowDirectoryPath = path.join(shadowRepoBranchPath, "directory");
-    const shadowDirectoryFilePath = path.join(shadowDirectoryPath, "file.js");
-    const cacheDirectoryPath = path.join(cacheRepoBranchPath, "directory");
+    const shadowDirectoryFilePath = path.join(shadowDirectoryPath, fileRelPath);
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -106,21 +107,14 @@ describe("handleDelete",  () => {
     test("Repo synced, shadow exists",  () => {
         const handler = new eventHandler();
         handler.handleDelete(filePath);
-        // Verify that file is copied to .delete directory
-        expect(fs.existsSync(cacheFilePath)).toBe(true);
-        // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
-        expect(diffFiles).toHaveLength(1);
-        const diffFilePath = path.join(diffsRepo, diffFiles[0]);
-        const diffData = readYML(diffFilePath);
-        expect(diffData.source).toEqual(DIFF_SOURCE);
-        expect(diffData.is_rename).toBeFalsy();
-        expect(diffData.is_new_file).toBeFalsy();
-        expect(diffData.is_deleted).toBe(true);
-        expect(diffData.repo_path).toEqual(repoPath);
-        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
-        expect(diffData.file_relative_path).toEqual("file.js");
-        expect(diffData.diff).toStrictEqual("");
+        expect(assertFileDeleteEvent(repoPath, fileRelPath)).toBe(true);
+    });
+
+    test("With Daemon: Repo synced, shadow exists",  async () => {
+        const handler = new eventHandler();
+        handler.handleDelete(filePath);
+        await populateBuffer();
+        expect(assertFileDeleteEvent(repoPath, fileRelPath)).toBe(true);
     });
 
     test("Repo synced, shadow does NOT exists",  () => {
@@ -148,24 +142,7 @@ describe("handleDelete",  () => {
         const handler = new eventHandler();
         handler.handleDelete(directoryPath);
         await waitFor(1);
-        // Verify that file is copied to .delete directory
-        expect(fs.existsSync(cacheDirectoryPath)).toBe(true);
-        // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
-        expect(diffFiles).toHaveLength(1);
-        // Verify correct diff file has been generated
-        expect(diffFiles).toHaveLength(1);
-        const diffFilePath = path.join(diffsRepo, diffFiles[0]);
-        const diffData = readYML(diffFilePath);
-        expect(diffData.source).toEqual(DIFF_SOURCE);
-        expect(diffData.is_deleted).toBe(true);
-        expect(diffData.is_rename).toBeFalsy();
-        expect(diffData.is_new_file).toBeFalsy();
-        expect(diffData.created_at).toBeTruthy();
-        expect(diffData.repo_path).toEqual(repoPath);
-        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
-        expect(diffData.file_relative_path).toEqual(relFilePath);
-        expect(diffData.diff).toEqual("");
+        expect(assertFileDeleteEvent(repoPath, dirFileRelPath, true)).toBe(true);
     });
 });
 
@@ -192,10 +169,11 @@ describe("handleDirectoryDeleteDiffs", () => {
     const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
     const cacheRepoBranchPath = pathUtilsObj.getDeletedRepoBranchPath();
 
+    const fileRelPath = "file_1.js";
     const shadowDirectoryPath = path.join(shadowRepoBranchPath, "directory");
-    const shadowFilePath = path.join(shadowDirectoryPath, "file.js");
-    const relFilePath = path.join("directory", "file.js");
-    const cacheFilePath = path.join(cacheRepoBranchPath, relFilePath);
+    const shadowFilePath = path.join(shadowDirectoryPath, fileRelPath);
+    const dirFileRelPath = path.join("directory", fileRelPath);
+    const cacheFilePath = path.join(cacheRepoBranchPath, dirFileRelPath);
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -215,22 +193,7 @@ describe("handleDirectoryDeleteDiffs", () => {
         const handler = new eventHandler(repoPath);
         handler.handleDirectoryDeleteDiffs("directory");
         await waitFor(1);
-        // Verify file has been renamed in the shadow repo
-        expect(fs.existsSync(cacheFilePath)).toBe(true);
-        // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
-        expect(diffFiles).toHaveLength(1);
-        const diffFilePath = path.join(diffsRepo, diffFiles[0]);
-        const diffData = readYML(diffFilePath);
-        expect(diffData.source).toEqual(DIFF_SOURCE);
-        expect(diffData.is_deleted).toBe(true);
-        expect(diffData.is_rename).toBeFalsy();
-        expect(diffData.is_new_file).toBeFalsy();
-        expect(diffData.created_at).toBeTruthy();
-        expect(diffData.repo_path).toEqual(repoPath);
-        expect(diffData.branch).toEqual(DEFAULT_BRANCH);
-        expect(diffData.file_relative_path).toEqual(relFilePath);
-        expect(diffData.diff).toEqual("");
+        expect(assertFileDeleteEvent(repoPath, dirFileRelPath)).toBe(true);
     });
 
     test("with file already in .deleted",  async () => {
