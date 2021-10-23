@@ -10,6 +10,7 @@ import {
     mkDir,
     randomBaseRepoPath
 } from "../helpers/helpers";
+import {API_HEALTHCHECK, API_USERS} from "../../lib/constants";
 
 
 describe('checkServerDown', () => {
@@ -35,18 +36,21 @@ describe('checkServerDown', () => {
         fetchMock.mockResponseOnce(JSON.stringify({status: true}));
         const isServerDown = await checkServerDown();
         expect(isServerDown).toBe(false);
+        expect(fetch.mock.calls[0][0]).toStrictEqual(API_HEALTHCHECK);
     });
 
     test("with status: false", async () => {
         fetchMock.mockResponseOnce(JSON.stringify({status: false}));
         const isServerDown = await checkServerDown();
         expect(isServerDown).toBe(true);
+        expect(fetch.mock.calls[0][0]).toStrictEqual(API_HEALTHCHECK);
     });
 
     test("will null response", async () => {
         fetchMock.mockResponseOnce(null);
         const isServerDown = await checkServerDown();
         expect(isServerDown).toBe(true);
+        expect(fetch.mock.calls[0][0]).toStrictEqual(API_HEALTHCHECK);
     });
 });
 
@@ -62,23 +66,39 @@ describe("getUserForToken",  () => {
         "repo_count": 0
     };
 
+    const assertAPICall = (token="ACCESS_TOKEN") => {
+        expect(fetch.mock.calls[0][0]).toStrictEqual(API_USERS);
+        const options = fetch.mock.calls[0][1];
+        expect(options.headers).toStrictEqual({
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${token}`
+        });
+        return true;
+    };
+
     test('should get auth error', async () => {
         fetchMock.mockResponseOnce(JSON.stringify(INVALID_TOKEN_JSON));
         const res = await getUserForToken("INVALID_TOKEN");
         expect(res.isTokenValid).toBe(false);
+        // Assert API call
+        expect(assertAPICall("INVALID_TOKEN")).toBe(true);
     });
 
     test('should fetch users', async () => {
         fetchMock.mockResponseOnce(JSON.stringify(user));
-        const apiResponse = await getUserForToken("TOKEN");
+        const apiResponse = await getUserForToken("ACCESS_TOKEN");
         expect(apiResponse.isTokenValid).toBe(true);
         expect(apiResponse.response).toEqual(user);
+        // Assert API call
+        expect(assertAPICall()).toBe(true);
     });
 
     test('with null response', async () => {
         fetchMock.mockResponseOnce(null);
-        const apiResponse = await getUserForToken("TOKEN");
+        const apiResponse = await getUserForToken("ACCESS_TOKEN");
         expect(apiResponse.isTokenValid).toBe(false);
+        // Assert API call
+        expect(assertAPICall()).toBe(true);
     });
 });
 
@@ -93,6 +113,19 @@ describe("createUserWithApi",  () => {
         fetch.resetMocks();
     });
 
+    const assertAPICall = (token="ACCESS_TOKEN") => {
+        expect(fetch.mock.calls[0][0]).toStrictEqual(API_USERS);
+        const options = fetch.mock.calls[0][1];
+        expect(options.method).toStrictEqual("POST");
+        expect(options.headers).toStrictEqual({
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${token}`
+        });
+        const body = JSON.parse(fetch.mock.calls[0][1].body);
+        expect(body).toStrictEqual(decodedSample);
+        return true;
+    };
+
     const user = {
         "email": "dummy@email.cpm",
         "plan": {},
@@ -104,19 +137,24 @@ describe("createUserWithApi",  () => {
         const resp = await createUserWithApi("INVALID_TOKEN", idToken);
         expect(resp.error).toBe(INVALID_TOKEN_JSON.error);
         expect(resp.user).toStrictEqual(decodedSample);
+        expect(assertAPICall("INVALID_TOKEN")).toBe(true);
+
     });
 
     test('should create users', async () => {
         fetchMock.mockResponseOnce(JSON.stringify(user));
-        const resp = await createUserWithApi("TOKEN", idToken);
+        const resp = await createUserWithApi("ACCESS_TOKEN", idToken);
         expect(resp.error).toEqual("");
         expect(resp.user).toStrictEqual(decodedSample);
+        expect(assertAPICall()).toBe(true);
+
     });
 
     test('with null response', async () => {
         fetchMock.mockResponseOnce(null);
-        const resp = await createUserWithApi("INVALID_TOKEN", idToken);
+        const resp = await createUserWithApi("ACCESS_TOKEN", idToken);
         expect(resp.error).toBeTruthy();
         expect(resp.user).toStrictEqual(decodedSample);
+        expect(assertAPICall()).toBe(true);
     });
 });
