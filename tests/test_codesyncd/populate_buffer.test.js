@@ -63,6 +63,11 @@ describe("populateBuffer", () => {
         fs.mkdirSync(repoPath, {recursive: true});
     });
 
+    afterEach(() => {
+        fs.rmSync(repoPath, {recursive: true, force: true});
+        fs.rmSync(baseRepoPath, {recursive: true, force: true});
+    });
+
     const addRepo = (deleteFile1=false) => {
         fs.mkdirSync(shadowRepoBranchPath, {recursive: true});
         getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
@@ -89,11 +94,6 @@ describe("populateBuffer", () => {
         };
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
     };
-
-    afterEach(() => {
-        fs.rmSync(repoPath, {recursive: true, force: true});
-        fs.rmSync(baseRepoPath, {recursive: true, force: true});
-    });
 
     test("No repo synced", async () => {
         await populateBuffer();

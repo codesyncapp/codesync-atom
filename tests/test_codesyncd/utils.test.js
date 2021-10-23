@@ -9,18 +9,23 @@ import { isBinaryFileSync } from 'isbinaryfile';
 import {
     cleanUpDeleteDiff,
     getDIffForDeletedFile,
-    handleFilesRename,
     handleNewFileUpload,
     isValidDiff,
     similarity
 } from "../../lib/codesyncd/utils";
 import {
     DIFF_DATA,
-    DUMMY_FILE_CONTENT, getConfigFilePath, getSeqTokenFilePath, getUserFilePath,
-    INVALID_TOKEN_JSON, mkDir,
+    DUMMY_FILE_CONTENT,
+    getConfigFilePath,
+    getSeqTokenFilePath,
+    getUserFilePath,
+    INVALID_TOKEN_JSON,
+    mkDir,
     PRE_SIGNED_URL,
     randomBaseRepoPath,
-    randomRepoPath, rmDir, writeFile
+    randomRepoPath,
+    rmDir,
+    writeFile
 } from "../helpers/helpers";
 import {DEFAULT_BRANCH} from "../../lib/constants";
 import {readYML} from "../../lib/utils/common";
@@ -166,7 +171,8 @@ describe("handleNewFileUpload",  () => {
         const response = {id: 1234, url: PRE_SIGNED_URL};
         fetchMock.mockResponseOnce(JSON.stringify(response));
         fs.mkdirSync(originalsRepoBranchPath, {recursive: true});
-        writeFile(path.join(originalsRepoBranchPath, fileRelPath), DUMMY_FILE_CONTENT);
+        const originalsFilePath = path.join(originalsRepoBranchPath, fileRelPath);
+        writeFile(path.join(originalsFilePath), DUMMY_FILE_CONTENT);
         writeFile(filePath, DUMMY_FILE_CONTENT);
         const diffData = Object.assign({}, DIFF_DATA);
         diffData.repo_path = repoPath;
@@ -175,8 +181,9 @@ describe("handleNewFileUpload",  () => {
             fileRelPath, 1234, configData);
         expect(result.uploaded).toBe(true);
         expect(fileRelPath in result.config.repos[repoPath].branches[DEFAULT_BRANCH]).toBe(true);
+        // File should be deleted from .originals
+        expect(fs.existsSync(originalsFilePath)).toBe(false);
     });
-
 });
 
 describe("cleanUpDeleteDiff",  () => {
