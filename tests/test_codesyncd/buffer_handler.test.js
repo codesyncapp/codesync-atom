@@ -11,7 +11,7 @@ import fetchMock from "jest-fetch-mock";
 
 import {pathUtils} from "../../lib/utils/path_utils";
 import {createSystemDirectories} from "../../lib/utils/setup_utils";
-import {DEFAULT_BRANCH, STATUS_BAR_MSGS} from "../../lib/constants";
+import {DAEMON_MSG_TILE_ID, DEFAULT_BRANCH, STATUS_BAR_MSGS} from "../../lib/constants";
 import {
     buildAtomEnv,
     DUMMY_FILE_CONTENT,
@@ -32,6 +32,7 @@ import {WebSocketEvents} from "../../lib/codesyncd/websocket/websocket_events";
 import {readYML} from "../../lib/utils/common";
 import {DIFF_SOURCE} from "../../lib/constants";
 import {recallDaemon} from "../../lib/codesyncd/codesyncd";
+import {daemonMessages} from "../../lib/views";
 
 
 describe("handleBuffer", () => {
@@ -150,15 +151,17 @@ describe("handleBuffer", () => {
     };
 
     const assertDiffsCount = (diffsCount = 0, command = undefined,
-                              text = STATUS_BAR_MSGS.DEFAULT, assertStatusBar = false) => {
+                              text = STATUS_BAR_MSGS.DEFAULT, times=1) => {
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(diffsCount);
-        if (assertStatusBar) {
-            expect(statusBarItem.show).toHaveBeenCalledTimes(1);
-            expect(statusBarItem.command).toStrictEqual(command);
-            expect(statusBarItem.text).toStrictEqual(text);
-        }
+
+        const daemonMsgView = new daemonMessages({ text });
+        const view = atom.views.getView(daemonMsgView);
+        const priority = 1;
+        expect(statusBarItem.addLeftTile).toHaveBeenCalledTimes(times);
+        const tileData = statusBarItem.addLeftTile.mock.calls[0][0];
+        expect(tileData).toStrictEqual({ item: view, priority });
         return true;
     };
 
@@ -174,7 +177,7 @@ describe("handleBuffer", () => {
         addRepo();
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.SERVER_DOWN)).toBe(true);
+        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.DEFAULT)).toBe(true);
     });
 
     test("Server is down, 1 valid diff", async () => {
@@ -183,7 +186,7 @@ describe("handleBuffer", () => {
         addNewFileDiff();
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(1, undefined, STATUS_BAR_MSGS.SERVER_DOWN)).toBe(true);
+        expect(assertDiffsCount(1, undefined, STATUS_BAR_MSGS.SERVER_DOWN, 2)).toBe(true);
     });
 
     test("No repo opened", async () => {
