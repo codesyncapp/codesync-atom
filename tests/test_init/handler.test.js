@@ -222,7 +222,7 @@ describe("initHandler",  () => {
             expect(atom.notifications.addWarning).toHaveBeenCalledTimes(0);
             // Verify file added in .shadow but removed from .originals
             expect(fs.existsSync(shadowFilePath)).toBe(true);
-            await waitFor(2);
+            await waitFor(3);
             expect(fs.existsSync(originalsFilePath)).toBe(false);
         });
     });
