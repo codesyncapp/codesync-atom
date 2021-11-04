@@ -3,6 +3,7 @@ import path from "path";
 import untildify from "untildify";
 import {DEFAULT_BRANCH} from "../../../lib/constants";
 import {
+    addUser,
     assertNewFileEvent,
     buildAtomEnv, Config, getConfigFilePath,
     getSyncIgnoreFilePath,
@@ -58,8 +59,6 @@ describe("handleCreate",  () => {
         atom.project.getPaths.mockReturnValue([repoPath]);
         // Create directories
         fs.mkdirSync(baseRepoPath, { recursive: true });
-        const configUtil = new Config(repoPath, configPath);
-        configUtil.addRepo();
         mkDir(repoPath);
         mkDir(diffsRepo);
         mkDir(originalsRepoBranchPath);
@@ -67,6 +66,13 @@ describe("handleCreate",  () => {
         writeFile(newFilePath, "use babel;");
         writeFile(ignorableFilePath, "use babel;");
         writeFile(syncIgnorePath, syncIgnoreData);
+        // Create .syncignore shadow
+        const shadowSyncIgnore = path.join(shadowRepoBranchPath, ".syncignore");
+        fs.writeFileSync(shadowSyncIgnore, syncIgnoreData);
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
+        // Add user
+        addUser(baseRepoPath);
     });
 
     afterEach(() => {
@@ -102,6 +108,18 @@ describe("handleCreate",  () => {
         expect(assertNewFileEvent(repoPath, newRelPath)).toBe(true);
     });
 
+    test("Valid File, InActive user",  async () => {
+        addUser(baseRepoPath, false);
+        const handler = new eventHandler();
+        handler.handleCreate(newFilePath);
+        // Verify file has been created in the .shadow repo and .originals repos
+        expect(fs.existsSync(shadowFilePath)).toBe(false);
+        expect(fs.existsSync(originalsFilePath)).toBe(false);
+        // Verify no diff file has been generated
+        const diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
+    });
+
     test("With Daemon: Valid File",  async () => {
         const handler = new eventHandler();
         handler.handleCreate(newFilePath);
@@ -126,8 +144,8 @@ describe("handleCreate",  () => {
         handler.handleCreate(newFilePath);
         // Verify file has been NOT created in the .originals repos
         expect(fs.existsSync(originalsFilePath)).toBe(false);
-        // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
+        // Verify no diff file has been generated
+        const diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
     });
 

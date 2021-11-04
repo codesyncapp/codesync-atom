@@ -12,12 +12,14 @@ import {
 } from "../../lib/utils/auth_utils";
 import {Auth0URLs, NOTIFICATION} from "../../lib/constants";
 import {
+    addUser,
     buildAtomEnv,
     getUserFilePath,
     INVALID_TOKEN_JSON,
     randomBaseRepoPath,
     randomRepoPath,
-    TEST_EMAIL
+    TEST_EMAIL,
+    waitFor
 } from "../helpers/helpers";
 import { readYML } from "../../lib/utils/common";
 import { initExpressServer } from "../../lib/server/server";
@@ -79,9 +81,29 @@ describe("redirectToBrowser",  () => {
 
 
 describe("logout",  () => {
-    test("Verify Logout URL",  () => {
+    let userFilePath = '';
+    const baseRepoPath = randomBaseRepoPath();
+
+    beforeEach(() => {
+        buildAtomEnv();
+        untildify.mockReturnValue(baseRepoPath);
+        fs.mkdirSync(baseRepoPath, {recursive: true});
+        userFilePath = addUser(baseRepoPath);
+    });
+
+    afterEach(() => {
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
+    });
+
+    test("Verify Logout URL",  async () => {
         const logoutUrl = logout();
         expect(logoutUrl.startsWith(Auth0URLs.LOGOUT)).toBe(true);
+        // Verify user has been marked as inActive in user.yml
+        const users = readYML(userFilePath);
+        expect(users[TEST_EMAIL].is_active).toBe(false);
+        await waitFor(1);
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.LOGGED_OUT_SUCCESSFULLY);
     });
 });
 

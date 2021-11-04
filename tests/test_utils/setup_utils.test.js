@@ -11,7 +11,7 @@ import {
     rmDir,
     mkDir,
     writeFile,
-    Config
+    Config, addUser
 } from "../helpers/helpers";
 import {getRepoInSyncMsg, NOTIFICATION} from "../../lib/constants";
 import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../lib/utils/setup_utils";
@@ -81,7 +81,6 @@ describe("setupCodeSync",  () => {
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.JOIN);
         expect(options.dismissable).toBe(true);
-
     });
 
     test('with empty user.yml', async () => {
@@ -95,6 +94,19 @@ describe("setupCodeSync",  () => {
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.JOIN);
         expect(options.dismissable).toBe(true);
+        fs.rmSync(userFilePath);
+    });
+
+    test('with no active user', async () => {
+        addUser(baseRepoPath, false);
+        const port = await setupCodeSync(undefined);
+        // should return port number
+        expect(port).toBeTruthy();
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(1);
+        expect(options.buttons[0].text).toBe(NOTIFICATION.JOIN);
         fs.rmSync(userFilePath);
     });
 
@@ -123,6 +135,7 @@ describe("setupCodeSync",  () => {
         writeFile(userFilePath, yaml.safeDump(userData));
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
+        addUser(baseRepoPath);
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeFalsy();
@@ -167,6 +180,13 @@ describe("showLogin",  () => {
 
     test('with empty user.yml',  async () => {
         writeFile(userFilePath, yaml.safeDump({}));
+        const shouldShowLogin = showLogIn();
+        expect(shouldShowLogin).toBe(true);
+        fs.rmSync(userFilePath);
+    });
+
+    test('with no active user',  async () => {
+        addUser(baseRepoPath, false);
         const shouldShowLogin = showLogIn();
         expect(shouldShowLogin).toBe(true);
         fs.rmSync(userFilePath);

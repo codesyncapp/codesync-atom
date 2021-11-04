@@ -4,24 +4,30 @@ import untildify from "untildify";
 
 import { initHandler } from "../../lib/init/init_handler";
 import { showChooseAccount } from "../../lib/utils/notifications";
-import {DEFAULT_BRANCH, getPublicPrivateMsg, NOTIFICATION} from "../../lib/constants";
-import { buildAtomEnv, getUserFilePath, randomBaseRepoPath, randomRepoPath, TEST_EMAIL } from "../helpers/helpers";
+import { getPublicPrivateMsg, NOTIFICATION } from "../../lib/constants";
+import {
+    addUser,
+    buildAtomEnv, getConfigFilePath,
+    getUserFilePath,
+    randomBaseRepoPath,
+    randomRepoPath,
+    TEST_EMAIL
+} from "../helpers/helpers";
 
 
 describe("showChooseAccount",  () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const userFilePath = getUserFilePath(baseRepoPath);
-    const userData = {};
-    userData[TEST_EMAIL] = {access_token: "ABC"};
+    const configPath = getConfigFilePath(baseRepoPath);
 
     beforeEach(() => {
+        fetch.resetMocks();
         jest.clearAllMocks();
         buildAtomEnv();
         untildify.mockReturnValue(baseRepoPath);
         fs.mkdirSync(baseRepoPath, {recursive: true});
         fs.mkdirSync(repoPath, {recursive: true});
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        fs.writeFileSync(configPath, yaml.safeDump({repos: {}}));
     });
 
     afterEach(() => {
@@ -30,7 +36,15 @@ describe("showChooseAccount",  () => {
     });
 
     test("with no user",  async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump({}));
+        await showChooseAccount(repoPath);
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.NO_VALID_ACCOUNT);
+        const options = atom.notifications.addError.mock.calls[0][1];
+        expect(options).toBeFalsy();
+    });
+
+    test("with no active user",  async () => {
+        addUser(baseRepoPath, false);
         await showChooseAccount(repoPath);
         expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.NO_VALID_ACCOUNT);
@@ -39,9 +53,28 @@ describe("showChooseAccount",  () => {
     });
 
     test("with valid user",  async () => {
+        addUser(baseRepoPath);
+        const user = {
+            "email": TEST_EMAIL,
+            "plan": {
+                REPO_COUNT: 5
+            },
+            "repo_count": 4
+        };
+        fetchMock
+            .mockResponseOnce(JSON.stringify({ status: true }))
+            .mockResponseOnce(JSON.stringify(user));
         const handler = await showChooseAccount(repoPath);
-        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
-        expect(handler.accessToken).toStrictEqual(userData[TEST_EMAIL].access_token);
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
+        expect(handler.accessToken).toStrictEqual("ACCESS_TOKEN");
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        const msg = getPublicPrivateMsg(repoPath);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(msg);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.PUBLIC);
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.PRIVATE);
+
         // TODO: In case we activate choose account option
         // expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         // expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);

@@ -10,6 +10,7 @@ import {
     updateMenu
 } from "../../lib/utils/menu_utils";
 import {
+    addUser,
     buildAtomEnv,
     Config,
     getConfigFilePath,
@@ -22,8 +23,6 @@ import {
 describe("generateMenu",  () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const userFilePath = getUserFilePath(baseRepoPath);
-    const userData = {"dummy_email": {access_token: "ABC"}};
     const configPath = getConfigFilePath(baseRepoPath);
 
     beforeEach(() => {
@@ -56,7 +55,7 @@ describe("generateMenu",  () => {
     });
 
     test("User is connected: No Repo Opened", () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([undefined]);
         const menu = generateMenu();
         const menuOptions = menu[0]['submenu'][0]['submenu'];
@@ -65,7 +64,7 @@ describe("generateMenu",  () => {
     });
 
     test("User is connected: Repo Opened and NOT connected", () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([repoPath]);
         const config = {'repos': {}};
         fs.writeFileSync(configPath, yaml.safeDump(config));
@@ -79,7 +78,7 @@ describe("generateMenu",  () => {
     });
 
     test("User is connected: Repo Opened and connected", () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([repoPath]);
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
@@ -99,7 +98,6 @@ describe("generateMenu",  () => {
 describe("generateRightClickMenu",  () => {
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
-    const userFilePath = getUserFilePath(baseRepoPath);
     const userData = {"dummy_email": {access_token: "ABC"}};
     const configPath = getConfigFilePath(baseRepoPath);
 
@@ -133,7 +131,7 @@ describe("generateRightClickMenu",  () => {
     });
 
     test("User is connected: No Repo Opened", () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([undefined]);
         const menu = generateRightClickMenu();
         const menuOptions = menu['atom-text-editor'][0]['submenu'];
@@ -142,7 +140,7 @@ describe("generateRightClickMenu",  () => {
     });
 
     test("User is connected: Repo Opened and NOT connected", () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([repoPath]);
         const config = {'repos': {}};
         fs.writeFileSync(configPath, yaml.safeDump(config));
@@ -155,7 +153,7 @@ describe("generateRightClickMenu",  () => {
     });
 
     test("User is connected: Repo Opened and connected", () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([repoPath]);
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();

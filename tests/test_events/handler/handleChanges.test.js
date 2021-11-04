@@ -6,6 +6,7 @@ import getBranchName from "current-git-branch";
 
 import {DEFAULT_BRANCH} from "../../../lib/constants";
 import {
+    addUser,
     assertChangeEvent,
     buildAtomEnv, Config,
     DUMMY_FILE_CONTENT,
@@ -61,6 +62,7 @@ describe("handleChangeEvent",  () => {
         fs.mkdirSync(baseRepoPath, { recursive: true });
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
+        addUser(baseRepoPath);
         fs.mkdirSync(repoPath, { recursive: true });
         fs.mkdirSync(diffsRepo, { recursive: true });
         fs.mkdirSync(originalsRepoBranchPath, { recursive: true });
@@ -68,10 +70,6 @@ describe("handleChangeEvent",  () => {
         fs.writeFileSync(filePath, DUMMY_FILE_CONTENT);
         fs.writeFileSync(ignorableFilePath, "use babel;");
         fs.writeFileSync(syncIgnorePath, syncIgnoreData);
-        const userFilePath = getUserFilePath(baseRepoPath);
-        const userData = {};
-        userData[TEST_EMAIL] = {access_token: "ABC"};
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
         const shadowSyncIgnore = path.join(shadowRepoBranchPath, ".syncignore");
         fs.writeFileSync(shadowSyncIgnore, syncIgnoreData);
     });
@@ -85,8 +83,15 @@ describe("handleChangeEvent",  () => {
         const configUtil = new Config(repoPath, configPath);
         configUtil.removeRepo();
         const handler = new eventHandler();
-        const event = {};
-        handler.handleChangeEvent(event);
+        const editor = {
+            getPath: function () {
+                return filePath;
+            },
+            getText: function () {
+                return DUMMY_FILE_CONTENT;
+            }
+        };
+        handler.handleChangeEvent(editor);
         await populateBuffer();
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
@@ -185,7 +190,26 @@ describe("handleChangeEvent",  () => {
             fileRelPath, shadowFilePath)).toBe(true);
     });
 
+    test("Synced repo, InActive user, should not add diff", () => {
+        addUser(baseRepoPath, false);
+        fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
+        const updatedText = `Updated ${DUMMY_FILE_CONTENT}`;
+        const editor = {
+            getPath: function () {
+                return filePath;
+            },
+            getText: function () {
+                return updatedText;
+            }
+        };
+        const handler = new eventHandler();
+        handler.handleChangeEvent(editor);
+        const diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
+    });
+
     test("With Daemon: Synced repo, Should add diff and update shadow file", async () => {
+        addUser(baseRepoPath);
         fs.writeFileSync(shadowFilePath, DUMMY_FILE_CONTENT);
         const updatedText = `${DUMMY_FILE_CONTENT} Changed data`;
         const handler = new eventHandler();
