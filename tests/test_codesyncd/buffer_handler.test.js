@@ -13,6 +13,7 @@ import {pathUtils} from "../../lib/utils/path_utils";
 import {createSystemDirectories} from "../../lib/utils/setup_utils";
 import {DAEMON_MSG_TILE_ID, DEFAULT_BRANCH, STATUS_BAR_MSGS} from "../../lib/constants";
 import {
+    addUser,
     buildAtomEnv,
     DUMMY_FILE_CONTENT,
     getConfigFilePath,
@@ -35,7 +36,7 @@ import {recallDaemon} from "../../lib/codesyncd/codesyncd";
 import {daemonMessages} from "../../lib/views";
 
 
-describe("handleBuffer", () => {
+describe("bufferHandler", () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
     const configPath = getConfigFilePath(baseRepoPath);
@@ -189,7 +190,8 @@ describe("handleBuffer", () => {
         expect(assertDiffsCount(1, undefined, STATUS_BAR_MSGS.SERVER_DOWN, 2)).toBe(true);
     });
 
-    test("No repo opened", async () => {
+    test("No repo opened, no diff", async () => {
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([undefined]);
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
@@ -197,6 +199,7 @@ describe("handleBuffer", () => {
     });
 
     test("Repo opened but not synced", async () => {
+        addUser(baseRepoPath);
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
         expect(assertDiffsCount(0, "CodeSync.ConnectRepo", STATUS_BAR_MSGS.CONNECT_REPO)).toBe(true);
@@ -254,10 +257,24 @@ describe("handleBuffer", () => {
     });
 
     test("Invalid repo path in diff file", async () => {
+        addUser(baseRepoPath);
         addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
         expect(assertDiffsCount(0, "CodeSync.ConnectRepo", STATUS_BAR_MSGS.CONNECT_REPO)).toBe(true);
+    });
+
+    test("No valid user", async () => {
+        const handler = new bufferHandler(statusBarItem);
+        await handler.run();
+        expect(assertDiffsCount(0, "CodeSync.SignUp", STATUS_BAR_MSGS.AUTHENTICATION_FAILED)).toBe(true);
+    });
+
+    test("No active user", async () => {
+        addUser(baseRepoPath, false);
+        const handler = new bufferHandler(statusBarItem);
+        await handler.run();
+        expect(assertDiffsCount(0, "CodeSync.SignUp", STATUS_BAR_MSGS.AUTHENTICATION_FAILED)).toBe(true);
     });
 
     test("Diff file for disconnected repo", async () => {

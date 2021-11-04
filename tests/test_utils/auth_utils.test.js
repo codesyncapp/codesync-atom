@@ -12,6 +12,7 @@ import {
 } from "../../lib/utils/auth_utils";
 import {Auth0URLs, NOTIFICATION} from "../../lib/constants";
 import {
+    addUser,
     buildAtomEnv,
     getUserFilePath,
     INVALID_TOKEN_JSON,
@@ -79,9 +80,25 @@ describe("redirectToBrowser",  () => {
 
 
 describe("logout",  () => {
+    let userFilePath = '';
+    const baseRepoPath = randomBaseRepoPath();
+
+    beforeEach(() => {
+        untildify.mockReturnValue(baseRepoPath);
+        fs.mkdirSync(baseRepoPath, {recursive: true});
+        userFilePath = addUser(baseRepoPath);
+    });
+
+    afterEach(() => {
+        fs.rmSync(baseRepoPath, { recursive: true, force: true });
+    });
+
     test("Verify Logout URL",  () => {
         const logoutUrl = logout();
         expect(logoutUrl.startsWith(Auth0URLs.LOGOUT)).toBe(true);
+        // Verify user has been marked as inActive in user.yml
+        const users = readYML(userFilePath);
+        expect(users[TEST_EMAIL].is_active).toBe(false);
     });
 });
 

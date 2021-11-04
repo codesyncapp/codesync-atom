@@ -2,6 +2,8 @@ import fs from "fs";
 import yaml from "js-yaml";
 import untildify from "untildify";
 import fetchMock from "jest-fetch-mock";
+
+import {API_HEALTHCHECK, API_USERS} from "../../lib/constants";
 import {checkServerDown, createUserWithApi, getUserForToken} from "../../lib/utils/api_utils";
 import {
     getSeqTokenFilePath,
@@ -10,7 +12,6 @@ import {
     mkDir,
     randomBaseRepoPath
 } from "../helpers/helpers";
-import {API_HEALTHCHECK, API_USERS} from "../../lib/constants";
 
 
 describe('checkServerDown', () => {

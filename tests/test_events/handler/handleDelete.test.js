@@ -7,6 +7,7 @@ import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
 import {DEFAULT_BRANCH} from "../../../lib/constants";
 import {
+    addUser,
     assertFileDeleteEvent,
     buildAtomEnv,
     Config,
@@ -63,7 +64,8 @@ describe("handleDelete",  () => {
         fs.mkdirSync(baseRepoPath, { recursive: true });
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
-
+        // Add user
+        addUser(baseRepoPath);
         fs.mkdirSync(repoPath, { recursive: true });
         fs.mkdirSync(diffsRepo, { recursive: true });
 
@@ -143,6 +145,17 @@ describe("handleDelete",  () => {
         handler.handleDelete(directoryPath);
         await waitFor(1);
         expect(assertFileDeleteEvent(repoPath, dirFileRelPath, true)).toBe(true);
+    });
+
+    test("Repo synced, user is inActive",  () => {
+        addUser(baseRepoPath, false);
+        const handler = new eventHandler();
+        handler.handleDelete(filePath);
+        // Verify that file is not copied to .delete directory
+        expect(fs.existsSync(cacheFilePath)).toBe(false);
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
     });
 });
 

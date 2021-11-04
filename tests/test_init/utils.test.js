@@ -23,7 +23,7 @@ import {
     getSyncIgnoreFilePath,
     mkDir,
     writeFile,
-    rmDir
+    rmDir, addUser
 } from "../helpers/helpers";
 import {readYML} from "../../lib/utils/common";
 import fetchMock from "jest-fetch-mock";
@@ -270,6 +270,16 @@ describe("saveIamUser", () => {
     });
 
     test("With no user.yml", () => {
+        const initUtilsObj = new initUtils();
+        initUtilsObj.saveIamUser(TEST_USER);
+        expect(fs.existsSync(userFilePath)).toBe(true);
+        const users = readYML(userFilePath);
+        expect(users[TEST_USER.email].access_key).toStrictEqual(TEST_USER.iam_access_key);
+        expect(users[TEST_USER.email].secret_key).toStrictEqual(TEST_USER.iam_secret_key);
+    });
+
+    test("With no active user.yml",  () => {
+        addUser(baseRepoPath, false);
         const initUtilsObj = new initUtils();
         initUtilsObj.saveIamUser(TEST_USER);
         expect(fs.existsSync(userFilePath)).toBe(true);

@@ -17,6 +17,7 @@ import {
 } from "../lib/handlers/commands_handler";
 import {createSystemDirectories} from "../lib/utils/setup_utils";
 import {
+    addUser,
     buildAtomEnv,
     Config,
     getConfigFilePath,
@@ -43,6 +44,7 @@ describe("Extension",() => {
         untildify.mockReturnValue(baseRepoPath);
         createSystemDirectories();
         global.IS_CODESYNC_DEV = true;
+        fs.mkdirSync(baseRepoPath, { recursive: true });
         extension.consumeStatusBar({
             addRightTile: jest.fn(),
             getRightTiles: jest.fn(() => []),
@@ -103,7 +105,8 @@ describe("Extension",() => {
         expect(atom.workspace.observeTextEditors).toHaveBeenCalledTimes(1);
     });
 
-    test("Fresh Setup, no user, repo not synced", async () => {
+    test("Fresh Setup, no active user, repo not synced", async () => {
+        addUser(baseRepoPath, false);
         atom.project.getPaths.mockReturnValue([repoPath]);
         await extension.activate({});
         expect(atom.menu.add).toHaveBeenCalledTimes(1);
@@ -158,10 +161,9 @@ describe("Extension",() => {
     });
 
     test("With user, repo is in sync", async () => {
-        fs.mkdirSync(baseRepoPath, { recursive: true });
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([repoPath]);
         await extension.activate({});
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);

@@ -47,6 +47,7 @@ describe("SyncHandler", () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        fetch.resetMocks();
         buildAtomEnv();
         untildify.mockReturnValue(baseRepoPath);
         fs.mkdirSync(baseRepoPath, {recursive: true});
@@ -68,8 +69,19 @@ describe("SyncHandler", () => {
 
     test("repo Not In Config",  () => {
         atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        const user = {
+            "email": TEST_EMAIL,
+            "plan": {
+                REPO_COUNT: 5
+            },
+            "repo_count": 4
+        };
+        fetchMock
+            .mockResponseOnce(JSON.stringify({ status: true }))
+            .mockResponseOnce(JSON.stringify(user));
         SyncHandler();
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
+        expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
         // TODO: In case we activate choose account option
         // expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         // expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.CHOOSE_ACCOUNT);

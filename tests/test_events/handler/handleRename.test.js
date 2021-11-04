@@ -8,6 +8,7 @@ import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
 import {DEFAULT_BRANCH} from "../../../lib/constants";
 import {
+    addUser,
     assertRenameEvent,
     buildAtomEnv,
     Config, DUMMY_FILE_CONTENT, FILE_ID,
@@ -69,6 +70,9 @@ describe("handleRenameFile",  () => {
         fs.mkdirSync(baseRepoPath, { recursive: true });
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
+        // Add user
+        addUser(baseRepoPath);
+
         fs.mkdirSync(repoPath, { recursive: true });
         fs.mkdirSync(diffsRepo, { recursive: true });
 
@@ -89,8 +93,8 @@ describe("handleRenameFile",  () => {
         configUtil.removeRepo();
         const handler = new eventHandler();
         handler.handleRename(newFilePath, newFilePath);
-        // Verify correct diff file has been generated
-        let diffFiles = fs.readdirSync(diffsRepo);
+        // Verify no diff file has been generated
+        const diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(0);
         // Verify file has been renamed in the shadow repo
         expect(fs.existsSync(renamedShadowFilePath)).toBe(false);
@@ -118,9 +122,19 @@ describe("handleRenameFile",  () => {
         // Write data to new file
         fs.writeFileSync(newFilePath, "use babel;");
         const handler = new eventHandler();
-        await populateBuffer();
         handler.handleRename(oldFilePath, newFilePath);
+        await populateBuffer();
         expect(assertRenameEvent(repoPath, configPath, fileRelPath, newRelPath)).toBe(true);
+    });
+
+    test("For File, user is inActive",  () => {
+        addUser(baseRepoPath, false);
+        fs.writeFileSync(newFilePath, "use babel;");
+        const handler = new eventHandler();
+        handler.handleRename(oldFilePath, newFilePath);
+        // Verify no diff file has been generated
+        const diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
     });
 
     test("For file renamed to nested directory",  () => {
