@@ -109,7 +109,6 @@ describe("logout",  () => {
 
 
 describe("createUser",  () => {
-    const idToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAY29kZXN5bmMuY29tIn0.bl7QQajhg2IjPp8h0gzFku85qCrXQN4kThoo1AxB_Dc";
     const repoPath = randomRepoPath();
     const baseRepoPath = randomBaseRepoPath();
     const userFilePath = getUserFilePath(baseRepoPath);
@@ -132,7 +131,7 @@ describe("createUser",  () => {
 
     test("with invalid token", async () => {
         fetchMock.mockResponseOnce(JSON.stringify(INVALID_TOKEN_JSON));
-        await createUser("TOKEN", idToken, repoPath);
+        await createUser("TOKEN", repoPath);
         expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.LOGIN_FAILED);
         const options = atom.notifications.addError.mock.calls[0][1];
@@ -142,10 +141,10 @@ describe("createUser",  () => {
 
     test("with valid token and user not in user.yml", async () => {
         atom.project.getPaths.mockReturnValueOnce([repoPath]);
-        const user = {"user": {"id": 1}};
+        const user = {"user": {"id": 1, "email": TEST_EMAIL}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
         global.skipAskConnect = false;
-        await createUser("TOKEN", idToken, repoPath);
+        await createUser("TOKEN", repoPath);
         const users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
         expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
@@ -156,9 +155,9 @@ describe("createUser",  () => {
         let users = {};
         users[TEST_EMAIL] = {access_token: "abc"};
         fs.writeFileSync(userFilePath, yaml.safeDump(users));
-        const user = {"user": {"id": 1}};
+        const user = {"user": {"id": 1, "email": TEST_EMAIL}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
-        await createUser("TOKEN", idToken, repoPath);
+        await createUser("TOKEN", repoPath);
         expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
         users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
@@ -177,9 +176,9 @@ describe("createUser",  () => {
         let users = {};
         users[TEST_EMAIL] = {access_token: "abc"};
         fs.writeFileSync(userFilePath, yaml.safeDump(users));
-        const user = {"user": {"id": 1}};
+        const user = {"user": {"id": 1, "email": TEST_EMAIL}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
-        await createUser("TOKEN", idToken, repoPath);
+        await createUser("TOKEN", repoPath);
         expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
         users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
