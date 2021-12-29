@@ -11,7 +11,7 @@ import fetchMock from "jest-fetch-mock";
 
 import {pathUtils} from "../../lib/utils/path_utils";
 import {createSystemDirectories} from "../../lib/utils/setup_utils";
-import {DAEMON_MSG_TILE_ID, DEFAULT_BRANCH, STATUS_BAR_MSGS} from "../../lib/constants";
+import {DEFAULT_BRANCH, STATUS_BAR_MSGS} from "../../lib/constants";
 import {
     addUser,
     buildAtomEnv,
@@ -28,8 +28,8 @@ import {
 } from "../helpers/helpers";
 import {bufferHandler} from "../../lib/codesyncd/handlers/buffer_handler";
 import {eventHandler} from "../../lib/events/event_handler";
-import {WebSocketClient} from "../../lib/codesyncd/websocket/websocket_client";
-import {WebSocketEvents} from "../../lib/codesyncd/websocket/websocket_events";
+import {SocketClient} from "../../lib/codesyncd/websocket/socket_client";
+import {SocketEvents} from "../../lib/codesyncd/websocket/socket_events";
 import {readYML} from "../../lib/utils/common";
 import {DIFF_SOURCE} from "../../lib/constants";
 import {recallDaemon} from "../../lib/codesyncd/codesyncd";
@@ -45,6 +45,7 @@ describe("bufferHandler", () => {
     userData[TEST_EMAIL] = {access_token: "ABC"};
     const sequenceTokenFilePath = getSeqTokenFilePath(baseRepoPath);
 
+    const accessToken = "ACCESS_TOKEN";
     untildify.mockReturnValue(baseRepoPath);
 
     const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
@@ -72,9 +73,13 @@ describe("bufferHandler", () => {
         fetch.resetMocks();
         jest.clearAllMocks();
         buildAtomEnv();
-        jest.spyOn(global.console, 'log');
         atom.project.getPaths.mockReturnValue([repoPath]);
         global.IS_CODESYNC_DEV = true;
+        global.socketConnection = {
+            on: jest.fn(),
+            send: jest.fn()
+        };
+        global.client = null;
         jest.spyOn(global.console, 'log');
         untildify.mockReturnValue(baseRepoPath);
         fs.mkdirSync(baseRepoPath, {recursive: true});
@@ -170,7 +175,7 @@ describe("bufferHandler", () => {
         fs.rmSync(configPath);
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, "CodeSync.ConnectRepo", STATUS_BAR_MSGS.CONNECT_REPO)).toBe(true);
+        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.NO_CONFIG)).toBe(true);
     });
 
     test("Server is down, no diff", async () => {
@@ -182,12 +187,11 @@ describe("bufferHandler", () => {
     });
 
     test("Server is down, 1 valid diff", async () => {
-        fetchMock.mockResponse(null);
         addRepo();
         addNewFileDiff();
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(1, undefined, STATUS_BAR_MSGS.SERVER_DOWN, 2)).toBe(true);
+        expect(assertDiffsCount(1, undefined)).toBe(true);
     });
 
     test("No repo opened, no diff", async () => {
@@ -295,26 +299,26 @@ describe("bufferHandler", () => {
         expect(assertDiffsCount(1)).toBe(true);
     });
 
-    test("WebSocketClient: registerEvents", async () => {
+    test("SocketClient: registerEvents", async () => {
         addRepo();
         addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const webSocketClient = new WebSocketClient(statusBarItem, repoDiffs[0]);
-        webSocketClient.registerEvents();
+        const webSocketClient = new SocketClient(statusBarItem,  "access_token", repoDiffs);
+        webSocketClient.connect();
         expect(webSocketClient.client.on).toHaveBeenCalledTimes(2);
         expect(webSocketClient.client.on.mock.calls[0][0]).toStrictEqual("connectFailed");
         expect(webSocketClient.client.on.mock.calls[1][0]).toStrictEqual("connect");
     });
 
-    test("WebSocketClient: registerConnectionEvents", async () => {
+    test("SocketClient: registerConnectionEvents", async () => {
         addRepo();
         addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const webSocketClient = new WebSocketClient(statusBarItem, repoDiffs[0]);
+        const webSocketClient = new SocketClient(statusBarItem, "access_token", repoDiffs);
         const connection = {
             on: jest.fn(),
             send: jest.fn()
@@ -324,36 +328,27 @@ describe("bufferHandler", () => {
         expect(connection.on.mock.calls[0][0]).toStrictEqual("error");
         expect(connection.on.mock.calls[1][0]).toStrictEqual("close");
         expect(connection.on.mock.calls[2][0]).toStrictEqual("message");
-        expect(connection.send).toHaveBeenCalledTimes(1);
-        expect(connection.send.mock.calls[0][0]).toStrictEqual("ACCESS_TOKEN");
+        expect(connection.send).toHaveBeenCalledTimes(0);
     });
 
-    test("WebSocketEvents: onMessage, invalid msg", async () => {
+    test("SocketEvents: onMessage, invalid msg", async () => {
         addRepo();
         addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, "ACCESS_TOKEN");
         const handled = await webSocketEvents.onMessage({'type': 'abc'});
         expect(handled).toBe(false);
     });
 
-    test("WebSocketEvents: onMessage, Diff sent successfully", async () => {
+    test("SocketEvents: onMessage, Diff sent successfully", async () => {
         addRepo();
         const diffFilePath = addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         const msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
@@ -368,17 +363,13 @@ describe("bufferHandler", () => {
         expect(fs.existsSync(diffFilePath)).toBe(false);
     });
 
-    test("WebSocketEvents: onMessage, Diff sent failed", async () => {
+    test("SocketEvents: onMessage, Diff sent failed", async () => {
         addRepo();
         const diffFilePath = addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         let diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         const msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
@@ -392,17 +383,13 @@ describe("bufferHandler", () => {
         expect(fs.existsSync(diffFilePath)).toBe(true);
     });
 
-    test("WebSocketEvents: onMessage, Auth Failed", async () => {
+    test("SocketEvents: onMessage, Auth Failed", async () => {
         addRepo();
         const diffFilePath = addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         const msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
@@ -417,17 +404,13 @@ describe("bufferHandler", () => {
         expect(fs.existsSync(diffFilePath)).toBe(true);
     });
 
-    test("WebSocketEvents: onMessage, NewFile Diff", async () => {
+    test("SocketEvents: onMessage, NewFile Diff", async () => {
         addRepo();
         const diffFilePath = addNewFileDiff();
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         const msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
@@ -448,7 +431,7 @@ describe("bufferHandler", () => {
         expect(fs.existsSync(originalsFilePath)).toBe(false);
     });
 
-    test("WebSocketEvents: onMessage, New File Diff along with changes diff", async () => {
+    test("SocketEvents: onMessage, New File Diff along with changes diff", async () => {
         // Should upload file only in 1 iteration
         addRepo();
         const diffFilePathForNewFile = addNewFileDiff();
@@ -457,11 +440,7 @@ describe("bufferHandler", () => {
         let handler = new bufferHandler(statusBarItem);
         let diffFiles = handler.getDiffFiles();
         let repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        let webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        let webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         let msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
@@ -494,12 +473,12 @@ describe("bufferHandler", () => {
         handler = new bufferHandler(statusBarItem);
         diffFiles = handler.getDiffFiles();
         repoDiffs = handler.groupRepoDiffs(diffFiles);
-        webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
         expect(fs.existsSync(diffFilePathForChanges)).toBe(true);
-        expect(connection.send).toHaveBeenCalledTimes(1);
-        const diffJSON = JSON.parse(connection.send.mock.calls[0][0]).diffs[0];
+        expect(global.socketConnection.send).toHaveBeenCalledTimes(1);
+        const diffJSON = JSON.parse(global.socketConnection.send.mock.calls[0][0]).diffs[0];
         expect(diffJSON.file_id).toStrictEqual(newFileId);
         expect(diffJSON.path).toStrictEqual(newRelPath);
         expect(diffJSON.is_deleted).toBeFalsy();
@@ -523,17 +502,13 @@ describe("bufferHandler", () => {
 
     });
 
-    test("WebSocketEvents: onMessage, Rename Diff", async () => {
+    test("SocketEvents: onMessage, Rename Diff", async () => {
         addRepo();
         const diffFilePath = addRenameDiff();
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         const msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
@@ -545,8 +520,8 @@ describe("bufferHandler", () => {
         const handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
         expect(fs.existsSync(diffFilePath)).toBe(true);
-        expect(connection.send).toHaveBeenCalledTimes(1);
-        const diffJSON = JSON.parse(connection.send.mock.calls[0][0]).diffs[0];
+        expect(global.socketConnection.send).toHaveBeenCalledTimes(1);
+        const diffJSON = JSON.parse(global.socketConnection.send.mock.calls[0][0]).diffs[0];
         expect(diffJSON.file_id).toStrictEqual(1234);
         expect(diffJSON.path).toStrictEqual(fileRelPath);
         expect(diffJSON.is_deleted).toBeFalsy();
@@ -557,17 +532,13 @@ describe("bufferHandler", () => {
         expect(diffJSON.platform).toStrictEqual(os.platform());
     });
 
-    test("WebSocketEvents: onMessage, Non Synced Deleted file", async () => {
+    test("SocketEvents: onMessage, Non Synced Deleted file", async () => {
         addRepo();
         const diffFilePath = addDeleteDiff(newRelPath);
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         const msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
@@ -579,20 +550,16 @@ describe("bufferHandler", () => {
         const handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
         expect(fs.existsSync(diffFilePath)).toBe(false);
-        expect(connection.send).toHaveBeenCalledTimes(0);
+        expect(global.socketConnection.send).toHaveBeenCalledTimes(0);
     });
 
-    test("WebSocketEvents: onMessage, Valid Deleted file", async () => {
+    test("SocketEvents: onMessage, Valid Deleted file", async () => {
         addRepo();
         const diffFilePath = addDeleteDiff(fileRelPath);
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         const msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
@@ -604,10 +571,10 @@ describe("bufferHandler", () => {
         const handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
         expect(fs.existsSync(shadowFilePath)).toBe(false);
-        expect(connection.send).toHaveBeenCalledTimes(1);
+        expect(global.socketConnection.send).toHaveBeenCalledTimes(1);
     });
 
-    test("WebSocketEvents: onMessage, Changes for non synced file", async () => {
+    test("SocketEvents: onMessage, Changes for non synced file", async () => {
         addRepo();
         fs.writeFileSync(newFilePath, DUMMY_FILE_CONTENT);
         const response = {id: newFileId, url: PRE_SIGNED_URL};
@@ -616,11 +583,7 @@ describe("bufferHandler", () => {
         const handler = new bufferHandler(statusBarItem);
         const diffFiles = handler.getDiffFiles();
         const repoDiffs = handler.groupRepoDiffs(diffFiles);
-        const connection = {
-            on: jest.fn(),
-            send: jest.fn()
-        };
-        const webSocketEvents = new WebSocketEvents(connection, statusBarItem, repoDiffs[0]);
+        const webSocketEvents = new SocketEvents(statusBarItem, repoDiffs, accessToken);
         const msg = {
             type: 'utf8',
             utf8Data: JSON.stringify({
