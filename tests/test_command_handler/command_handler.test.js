@@ -62,13 +62,13 @@ describe("SyncHandler", () => {
     });
 
     test("No Repo Path", () => {
-        atom.project.getPaths.mockReturnValueOnce([undefined]);
+        atom.project.getPaths.mockReturnValue([undefined]);
         SyncHandler();
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
     test("repo Not In Config",  () => {
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const user = {
             "email": TEST_EMAIL,
             "plan": {
@@ -95,7 +95,7 @@ describe("SyncHandler", () => {
     test("repo In Config", () => {
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         SyncHandler();
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         const repoInSyncMsg = getRepoInSyncMsg(repoPath);
@@ -131,13 +131,13 @@ describe("unSyncHandler", () => {
     });
 
     test("No Repo Path", async () => {
-        atom.project.getPaths.mockReturnValueOnce([undefined]);
+        atom.project.getPaths.mockReturnValue([undefined]);
         await unSyncHandler();
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
     test("Ask Unsync confirmation", async () => {
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         await unSyncHandler();
         expect(atom.notifications.addWarning).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_CONFIRMATION);
@@ -178,7 +178,7 @@ describe("postSelectionUnsync", () => {
     });
 
     test("Repo is already inactive", async () => {
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         configData.repos[repoPath] = {
             is_disconnected: true,
             branches: {}
@@ -190,7 +190,7 @@ describe("postSelectionUnsync", () => {
     });
 
     test("Unsyncing error from server", async () => {
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
         fetchMock.mockResponseOnce(JSON.stringify({error: "NOT SO FAST"}));
@@ -203,7 +203,7 @@ describe("postSelectionUnsync", () => {
     });
 
     test("Synced successfully", async () => {
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
         fetchMock.mockResponseOnce(JSON.stringify({}));
@@ -244,13 +244,13 @@ describe("trackRepoHandler", () => {
     });
 
     test("No Repo Path", () => {
-        atom.project.getPaths.mockReturnValueOnce([undefined]);
+        atom.project.getPaths.mockReturnValue([undefined]);
         trackRepoHandler();
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
     });
 
     test("Repo in config", async () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.project.getPaths.mockReturnValue([repoPath]);
         configData.repos[repoPath] = {
             id: 1234,
             branches: {},
@@ -287,14 +287,14 @@ describe("trackFileHandler", () => {
     });
 
     test("No Repo Path", () => {
-        global.atom.project.getPaths.mockReturnValueOnce([undefined]);
+        global.atom.project.getPaths.mockReturnValue([undefined]);
         trackFileHandler();
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
     });
 
     test("No editor opened", () => {
         // Mock data
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.project.getPaths.mockReturnValue([repoPath]);
         global.atom.workspace.getActiveTextEditor.mockReturnValueOnce(undefined);
         trackFileHandler();
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
@@ -303,7 +303,7 @@ describe("trackFileHandler", () => {
 
     test("No file is opened", () => {
         // Mock data
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.project.getPaths.mockReturnValue([repoPath]);
         global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
             getPath: jest.fn(() => {
                 return null;
@@ -314,7 +314,7 @@ describe("trackFileHandler", () => {
     });
 
     test("File Path not in config", () => {
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.project.getPaths.mockReturnValue([repoPath]);
         global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
             getPath: jest.fn(() => {
                 return path.join(repoPath, "file.js");
@@ -335,7 +335,7 @@ describe("trackFileHandler", () => {
 
     test("File Path in config", () => {
         // Mock data
-        global.atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        global.atom.project.getPaths.mockReturnValue([repoPath]);
         global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
             getPath: jest.fn(() => {
                 return path.join(repoPath, "file.js");

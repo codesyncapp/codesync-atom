@@ -150,7 +150,7 @@ describe("setupCodeSync",  () => {
     });
 
     test('showConnectRepoView',  async () => {
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         writeFile(configPath, yaml.safeDump({repos: {}}));
         const shouldShowConnectRepoView = showConnectRepoView();
         expect(shouldShowConnectRepoView).toBe(true);

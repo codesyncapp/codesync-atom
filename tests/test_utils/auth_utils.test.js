@@ -140,25 +140,25 @@ describe("createUser",  () => {
     });
 
     test("with valid token and user not in user.yml", async () => {
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const user = {"user": {"id": 1, "email": TEST_EMAIL}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
         global.skipAskConnect = false;
         await createUser("TOKEN", repoPath);
         const users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
-        expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
+        expect(atom.project.getPaths).toHaveBeenCalledTimes(2);
     });
 
     test("with user in user.yml", async () => {
-        atom.project.getPaths.mockReturnValueOnce([repoPath]);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         let users = {};
         users[TEST_EMAIL] = {access_token: "abc"};
         fs.writeFileSync(userFilePath, yaml.safeDump(users));
         const user = {"user": {"id": 1, "email": TEST_EMAIL}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
         await createUser("TOKEN", repoPath);
-        expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
+        expect(atom.project.getPaths).toHaveBeenCalledTimes(2);
         users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
@@ -172,14 +172,14 @@ describe("createUser",  () => {
     });
 
     test("with no repoPath", async () => {
-        atom.project.getPaths.mockReturnValueOnce([undefined]);
+        atom.project.getPaths.mockReturnValue([undefined]);
         let users = {};
         users[TEST_EMAIL] = {access_token: "abc"};
         fs.writeFileSync(userFilePath, yaml.safeDump(users));
         const user = {"user": {"id": 1, "email": TEST_EMAIL}};
         fetchMock.mockResponseOnce(JSON.stringify(user));
         await createUser("TOKEN", repoPath);
-        expect(atom.project.getPaths).toHaveBeenCalledTimes(1);
+        expect(atom.project.getPaths).toHaveBeenCalledTimes(2);
         users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
