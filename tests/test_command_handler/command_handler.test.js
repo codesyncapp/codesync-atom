@@ -130,15 +130,30 @@ describe("unSyncHandler", () => {
         fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
-    test("No Repo Path", async () => {
+    test("No Repo Path", () => {
         atom.project.getPaths.mockReturnValue([undefined]);
-        await unSyncHandler();
+        unSyncHandler();
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
-    test("Ask Unsync confirmation", async () => {
+    test("Ask Unsync confirmation", () => {
         atom.project.getPaths.mockReturnValue([repoPath]);
-        await unSyncHandler();
+        unSyncHandler();
+        expect(atom.notifications.addWarning).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_CONFIRMATION);
+        const options = atom.notifications.addWarning.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.YES);
+        expect(options.buttons[0].onDidClick).toBeTruthy();
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.CANCEL);
+        expect(options.buttons[1].onDidClick).toBeTruthy();
+        expect(options.dismissable).toBe(true);
+    });
+
+    test("Ask Unsync confirmation; Nested dir of synced repo",  async () => {
+        const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([subDir]);
+        unSyncHandler();
         expect(atom.notifications.addWarning).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_CONFIRMATION);
         const options = atom.notifications.addWarning.mock.calls[0][1];
@@ -260,6 +275,19 @@ describe("trackRepoHandler", () => {
         expect(shell.openExternal).toHaveBeenCalledTimes(1);
         expect(playbackLink.startsWith(WEB_APP_URL)).toBe(true);
     });
+
+    test("With nested directory",  async () => {
+        const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([subDir]);
+        configData.repos[repoPath] = {
+            id: 1234,
+            branches: {},
+        };
+        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        const playbackLink = trackRepoHandler();
+        expect(shell.openExternal).toHaveBeenCalledTimes(1);
+        expect(playbackLink.startsWith(WEB_APP_URL)).toBe(true);
+    });
 });
 
 describe("trackFileHandler", () => {
@@ -332,7 +360,6 @@ describe("trackFileHandler", () => {
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
     });
 
-
     test("File Path in config", () => {
         // Mock data
         global.atom.project.getPaths.mockReturnValue([repoPath]);
@@ -353,4 +380,27 @@ describe("trackFileHandler", () => {
         expect(shell.openExternal).toHaveBeenCalledTimes(1);
     });
 
+    test("With nested directory",  () => {
+        // Mock data
+        const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([subDir]);
+
+        global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
+            getPath: jest.fn(() => {
+                return path.join(repoPath, "file.js");
+            })
+        });
+
+        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
+        // Update config file
+        configData.repos[repoPath] = {
+            id: 1234,
+            branches: {}
+        };
+        configData.repos[repoPath].branches[DEFAULT_BRANCH] = {"file.js": 1234};
+        fs.writeFileSync(configPath, yaml.safeDump(configData));
+
+        trackFileHandler();
+        expect(shell.openExternal).toHaveBeenCalledTimes(1);
+    });
 });

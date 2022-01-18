@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import yaml from "js-yaml";
 import untildify from "untildify";
 
@@ -99,7 +100,7 @@ describe("setupCodeSync",  () => {
 
     test('with no active user', async () => {
         addUser(baseRepoPath, false);
-        const port = await setupCodeSync(undefined);
+        const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
@@ -112,7 +113,7 @@ describe("setupCodeSync",  () => {
 
     test('with user no repo opened', async () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
-        await setupCodeSync(undefined);
+        await setupCodeSync("");
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
@@ -154,6 +155,44 @@ describe("setupCodeSync",  () => {
         writeFile(configPath, yaml.safeDump({repos: {}}));
         const shouldShowConnectRepoView = showConnectRepoView();
         expect(shouldShowConnectRepoView).toBe(true);
+    });
+
+    test('with nested directory',  async () => {
+        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
+        addUser(baseRepoPath);
+        const subDir = path.join(repoPath, "directory");
+        const port = await setupCodeSync(subDir);
+        // should return port number
+        expect(port).toBeFalsy();
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        const repoInSyncMsg = getRepoInSyncMsg(subDir);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(repoInSyncMsg);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(1);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
+        expect(options.dismissable).toBe(true);
+        fs.rmSync(userFilePath);
+    });
+
+    test('with nested directory and parent is_disconnected',  async () => {
+        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo(true);
+        addUser(baseRepoPath);
+        const subDir = path.join(repoPath, "directory");
+        const port = await setupCodeSync(subDir);
+        // should return port number
+        expect(port).toBeTruthy();
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.CONNECT_REPO);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.CONNECT);
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
+        expect(options.dismissable).toBe(true);
+        fs.rmSync(userFilePath);
     });
 });
 
