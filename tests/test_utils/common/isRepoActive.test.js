@@ -14,7 +14,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-    fs.rmdirSync(baseRepoPath, { recursive: true });
+    fs.rmSync(baseRepoPath, { recursive: true });
 });
 
 test('Active Repo', () => {

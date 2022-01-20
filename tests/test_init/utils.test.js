@@ -3,7 +3,6 @@ import os from "os";
 import path from "path";
 import yaml from "js-yaml";
 import untildify from 'untildify';
-import getBranchName from 'current-git-branch';
 import {initUtils} from "../../lib/init/utils";
 
 import {
@@ -23,7 +22,9 @@ import {
     getSyncIgnoreFilePath,
     mkDir,
     writeFile,
-    rmDir, addUser
+    rmDir, 
+    addUser,
+    waitFor
 } from "../helpers/helpers";
 import {readYML} from "../../lib/utils/common";
 import fetchMock from "jest-fetch-mock";
@@ -85,79 +86,6 @@ describe("isValidFilesCount", () => {
     });
 });
 
-describe("successfullySynced", () => {
-    const baseRepoPath = randomBaseRepoPath();
-    const repoPath = randomRepoPath();
-    const configPath = getConfigFilePath(baseRepoPath);
-    const configData = {repos: {}};
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        untildify.mockReturnValue(baseRepoPath);
-        fs.mkdirSync(baseRepoPath);
-        fs.mkdirSync(repoPath);
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
-    });
-
-    afterEach(() => {
-        fs.rmSync(repoPath, {recursive: true, force: true});
-        fs.rmSync(baseRepoPath, {recursive: true, force: true});
-    });
-
-    test("Non Synced Repo", () => {
-        const initUtilsObj = new initUtils(repoPath);
-        const isSynced = initUtilsObj.successfullySynced();
-        expect(isSynced).toBe(false);
-    });
-
-    test("Non Synced Branch", () => {
-        const initUtilsObj = new initUtils(repoPath);
-        configData.repos[repoPath] = {branches: {}};
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
-        const isSynced = initUtilsObj.successfullySynced();
-        expect(isSynced).toBe(true);
-    });
-
-    test("Invalid file IDs", () => {
-        const initUtilsObj = new initUtils(repoPath);
-        configData.repos[repoPath] = {branches: {}};
-        configData.repos[repoPath].branches[DEFAULT_BRANCH] = {
-            file_1: null,
-            file_2: null,
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const isSynced = initUtilsObj.successfullySynced();
-        expect(isSynced).toBe(false);
-    });
-
-    test("Valid file IDs", () => {
-        const initUtilsObj = new initUtils(repoPath);
-        configData.repos[repoPath] = {branches: {}};
-        configData.repos[repoPath].branches[DEFAULT_BRANCH] = {
-            file_1: 123,
-            file_2: 456,
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const isSynced = initUtilsObj.successfullySynced();
-        expect(isSynced).toBe(true);
-    });
-
-    test("With nested directory",  () => {
-        const subDir = path.join(repoPath, "directory");
-        const initUtilsObj = new initUtils(subDir);
-        configData.repos[repoPath] = {branches: {}};
-        configData.repos[repoPath].branches[DEFAULT_BRANCH] = {
-            file_1: 123,
-            file_2: 456,
-        };
-        fs.writeFileSync(configPath, yaml.safeDump(configData));
-        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
-        const isSynced = initUtilsObj.successfullySynced();
-        expect(isSynced).toBe(true);
-    });
-});
 
 describe("getSyncablePaths", () => {
     const baseRepoPath = randomBaseRepoPath();
@@ -458,6 +386,19 @@ describe("uploadRepo", () => {
             .mockResponseOnce(JSON.stringify({status: true}))
             .mockResponseOnce(JSON.stringify(TEST_REPO_RESPONSE));
 
+        const filePaths = itemPaths.map(itemPath => itemPath.file_path);
+        const pathUtilsObj = new pathUtils(repoPath, DEFAULT_BRANCH);
+        // copy files to .originals repo
+        const originalsRepoBranchPath = pathUtilsObj.getOriginalsRepoBranchPath();
+        initUtilsObj.copyFilesTo(filePaths, originalsRepoBranchPath);
+        // copy files to .shadow repo
+        const shadowRepoBranchPath = pathUtilsObj.getShadowRepoBranchPath();
+        initUtilsObj.copyFilesTo(filePaths, shadowRepoBranchPath);
+    
+        await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths,
+            TEST_EMAIL, false);
+        await waitFor(3);
+    
         await initUtilsObj.uploadRepo(DEFAULT_BRANCH, "ACCESS_TOKEN", itemPaths, TEST_EMAIL, false);
 
         // Verify file Ids have been added in config
@@ -472,6 +413,12 @@ describe("uploadRepo", () => {
         users = readYML(userFilePath);
         expect(users[TEST_USER.email].access_key).toStrictEqual(TEST_USER.iam_access_key);
         expect(users[TEST_USER.email].secret_key).toStrictEqual(TEST_USER.iam_secret_key);
+        // Make sure files have been deleted from .originals
+        filePaths.forEach(_filePath => {
+            const relPath = _filePath.split(path.join(repoPath, path.sep))[1];
+            const originalPath = path.join(originalsRepoBranchPath, relPath);
+            expect(fs.existsSync(originalPath)).toBe(false);
+        });
     });
 
     test("repo Not In Config", async () => {

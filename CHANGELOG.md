@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.4.0] - 2022-01-
 ### Added
 - Checking if opened repo is a sub directory of already synced repo
+- Different views and notification buttons for subDir and syncignored subDir
 
 ## [3.3.2] - 2022-01-11
 ### Added
@@ -97,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - tests written for codesync.js
 - eventHandler class introduced
-- Improved shouldIgnoreFile
+- Improved shouldIgnorePath
 
 ## [2.26.8] - 2021-09-29
 ### Changed

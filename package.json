@@ -19,8 +19,8 @@
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0",
-    "npm": "7.7.6",
-    "node": "15.13.0"
+    "npm": "8.1.2",
+    "node": "16.13.2"
   },
   "dependencies": {
     "aws-sdk": "^2.927.0",
@@ -33,7 +33,7 @@
     "ignore": "^5.1.8",
     "isbinaryfile": "^4.0.8",
     "js-yaml": "^3.14.1",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.6.7",
     "run-parallel": "^1.2.0",
     "untildify": "^4.0.0",
     "walk": "^2.3.14",

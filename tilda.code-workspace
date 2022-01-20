@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "../../../Django-Project-Todo-list/mytodoproject"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}

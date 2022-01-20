@@ -14,8 +14,13 @@ import {
     writeFile,
     Config, addUser
 } from "../helpers/helpers";
-import {getRepoInSyncMsg, NOTIFICATION} from "../../lib/constants";
-import {createSystemDirectories, setupCodeSync, showConnectRepoView, showLogIn} from "../../lib/utils/setup_utils";
+import {
+    getRepoInSyncMsg,
+    getRepoIsSyncIgnoredMsg,
+    NOTIFICATION,
+    SYNCIGNORE} from "../../lib/constants";
+import {createSystemDirectories, setupCodeSync, showConnectRepoView, 
+    showLogIn, showRepoIsSyncIgnoredView} from "../../lib/utils/setup_utils";
 
 
 describe("createSystemDirectories",  () => {
@@ -119,6 +124,7 @@ describe("setupCodeSync",  () => {
 
     test('with user and repo not synced', async () => {
         writeFile(userFilePath, yaml.safeDump(userData));
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeTruthy();
@@ -137,6 +143,7 @@ describe("setupCodeSync",  () => {
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
         addUser(baseRepoPath);
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const port = await setupCodeSync(repoPath);
         // should return port number
         expect(port).toBeFalsy();
@@ -157,12 +164,19 @@ describe("setupCodeSync",  () => {
         expect(shouldShowConnectRepoView).toBe(true);
     });
 
-    test('with nested directory',  async () => {
+    test('showRepoIsSyncIgnoredView',  async () => {
+        fs.writeFileSync(configPath, yaml.safeDump({repos: {}}));
+        const shouldShow = showRepoIsSyncIgnoredView(repoPath);
+        expect(shouldShow).toBe(false);
+    });
+
+    test('with sub directory',  async () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
         addUser(baseRepoPath);
         const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const port = await setupCodeSync(subDir);
         // should return port number
         expect(port).toBeFalsy();
@@ -171,17 +185,42 @@ describe("setupCodeSync",  () => {
         expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(repoInSyncMsg);
         const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(1);
-        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
         expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
     });
 
-    test('with nested directory and parent is_disconnected',  async () => {
+    test('with sub directory syncignored',  async () => {
+        const subDirName = "directory";
+        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
+        addUser(baseRepoPath);
+        // Add subDir to .syncignore
+        const syncignorePath = path.join(repoPath, SYNCIGNORE);
+        fs.writeFileSync(syncignorePath, subDirName);
+        const subDir = path.join(repoPath, subDirName);
+        atom.project.getPaths.mockReturnValue([subDir]);
+        const port = await setupCodeSync(subDir);
+        // should return port number
+        expect(port).toBeTruthy();
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        const msg = getRepoIsSyncIgnoredMsg(subDir);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(msg);
+        const options = atom.notifications.addInfo.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(1);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
+        expect(options.dismissable).toBe(true);
+        fs.rmSync(userFilePath);
+    });
+
+    test('with sub directory and parent is_disconnected',  async () => {
         fs.writeFileSync(userFilePath, yaml.safeDump(userData));
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo(true);
         addUser(baseRepoPath);
         const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([repoPath]);
         const port = await setupCodeSync(subDir);
         // should return port number
         expect(port).toBeTruthy();
