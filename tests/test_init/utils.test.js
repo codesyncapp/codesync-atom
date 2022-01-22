@@ -31,7 +31,7 @@ import fetchMock from "jest-fetch-mock";
 import {isBinaryFileSync} from "isbinaryfile";
 import {pathUtils} from "../../lib/utils/path_utils";
 import {API_INIT, DEFAULT_BRANCH, DIFF_SOURCE, NOTIFICATION, SYNCIGNORE} from "../../lib/constants";
-
+import { CodeSyncState, CODESYNC_STATES } from "../../lib/utils/state_utils";
 
 describe("isValidRepoSize", () => {
     const baseRepoPath = randomBaseRepoPath();
@@ -413,6 +413,11 @@ describe("uploadRepo", () => {
         users = readYML(userFilePath);
         expect(users[TEST_USER.email].access_key).toStrictEqual(TEST_USER.iam_access_key);
         expect(users[TEST_USER.email].secret_key).toStrictEqual(TEST_USER.iam_secret_key);
+
+        expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_SYNCED);
+
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
         // Make sure files have been deleted from .originals
         filePaths.forEach(_filePath => {
             const relPath = _filePath.split(path.join(repoPath, path.sep))[1];

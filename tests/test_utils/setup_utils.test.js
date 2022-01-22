@@ -21,7 +21,7 @@ import {
     SYNCIGNORE} from "../../lib/constants";
 import {createSystemDirectories, setupCodeSync, showConnectRepoView, 
     showLogIn, showRepoIsSyncIgnoredView} from "../../lib/utils/setup_utils";
-
+import { CodeSyncState, CODESYNC_STATES } from "../../lib/utils/state_utils";
 
 describe("createSystemDirectories",  () => {
     const baseRepoPath = randomBaseRepoPath();
@@ -63,6 +63,8 @@ describe("setupCodeSync",  () => {
         untildify.mockReturnValue(baseRepoPath);
         mkDir(baseRepoPath);
         mkDir(repoPath);
+        CodeSyncState.set(CODESYNC_STATES.REPO_IS_IN_SYNC, false);
+        CodeSyncState.set(CODESYNC_STATES.USER_EMAIL, null);
     });
 
     afterEach(() => {
@@ -136,6 +138,7 @@ describe("setupCodeSync",  () => {
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
         expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
     });
 
     test('with synced repo',  async () => {
@@ -155,6 +158,7 @@ describe("setupCodeSync",  () => {
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
         expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
     });
 
     test('showConnectRepoView',  async () => {
@@ -188,6 +192,7 @@ describe("setupCodeSync",  () => {
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
         expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
     });
 
     test('with sub directory syncignored',  async () => {
@@ -212,6 +217,7 @@ describe("setupCodeSync",  () => {
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
         expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
     });
 
     test('with sub directory and parent is_disconnected',  async () => {
@@ -232,6 +238,7 @@ describe("setupCodeSync",  () => {
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
         expect(options.dismissable).toBe(true);
         fs.rmSync(userFilePath);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
     });
 });
 

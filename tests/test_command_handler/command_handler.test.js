@@ -23,6 +23,7 @@ import {WEB_APP_URL} from "../../lib/settings";
 import {readYML} from "../../lib/utils/common";
 import {DEFAULT_BRANCH} from "../../lib/constants";
 import getBranchName from "current-git-branch";
+import { CodeSyncState, CODESYNC_STATES } from "../../lib/utils/state_utils";
 
 const {shell} = require('electron');
 
@@ -102,6 +103,7 @@ describe("SyncHandler", () => {
         expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(repoInSyncMsg);
         const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options).toBeFalsy();
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
     });
 
 });
@@ -231,6 +233,7 @@ describe("postSelectionUnsync", () => {
         expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNCED);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
     });
 });
 

@@ -27,7 +27,7 @@ import {
     randomRepoPath
 } from "./helpers/helpers";
 import {logout} from "../lib/utils/auth_utils";
-
+import { CodeSyncState, CODESYNC_STATES } from "../lib/utils/state_utils";
 
 describe("Extension",() => {
     const baseRepoPath = randomBaseRepoPath();
@@ -139,6 +139,7 @@ describe("Extension",() => {
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.CONNECT);
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
         expect(options.dismissable).toBe(true);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
     });
 
     test("With user, repo is disconnected", async () => {
@@ -159,6 +160,7 @@ describe("Extension",() => {
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.CONNECT);
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
         expect(options.dismissable).toBe(true);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
     });
 
     test("With user, repo is in sync", async () => {
@@ -174,6 +176,7 @@ describe("Extension",() => {
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_IT);
         expect(options.dismissable).toBe(true);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
     });
 
     test("With user, repo is subDir and synced", async () => {
@@ -191,6 +194,7 @@ describe("Extension",() => {
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
         expect(options.dismissable).toBe(true);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
     });
 
     test("With user, repo is subDir and syncignored", async () => {
@@ -211,5 +215,6 @@ describe("Extension",() => {
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
         expect(options.dismissable).toBe(true);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
     });
 });

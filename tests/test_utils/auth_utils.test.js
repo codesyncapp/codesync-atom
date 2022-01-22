@@ -23,6 +23,7 @@ import {
 } from "../helpers/helpers";
 import { readYML } from "../../lib/utils/common";
 import { initExpressServer } from "../../lib/server/server";
+import { CodeSyncState, CODESYNC_STATES } from "../../lib/utils/state_utils";
 
 const { shell } = require('electron');
 
@@ -104,6 +105,7 @@ describe("logout",  () => {
         await waitFor(1);
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.LOGGED_OUT_SUCCESSFULLY);
+        CodeSyncState.get(CODESYNC_STATES.USER_EMAIL, TEST_EMAIL);
     });
 });
 
@@ -136,7 +138,7 @@ describe("createUser",  () => {
         expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.LOGIN_FAILED);
         const options = atom.notifications.addError.mock.calls[0][1];
         expect(options).toBeFalsy();
-
+        expect(CodeSyncState.get(CODESYNC_STATES.USER_EMAIL)).toBeFalsy();
     });
 
     test("with valid token and user not in user.yml", async () => {
@@ -148,6 +150,7 @@ describe("createUser",  () => {
         const users = readYML(userFilePath);
         expect(TEST_EMAIL in users).toBe(true);
         expect(atom.project.getPaths).toHaveBeenCalledTimes(2);
+        expect(CodeSyncState.get(CODESYNC_STATES.USER_EMAIL)).toStrictEqual(TEST_EMAIL);
     });
 
     test("with user in user.yml", async () => {
@@ -168,7 +171,8 @@ describe("createUser",  () => {
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.CONNECT);
         expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.IGNORE);
         expect(options.dismissable).toBe(true);
-
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
+        expect(CodeSyncState.get(CODESYNC_STATES.USER_EMAIL)).toStrictEqual(TEST_EMAIL);
     });
 
     test("with no repoPath", async () => {
@@ -187,6 +191,7 @@ describe("createUser",  () => {
         const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toBeFalsy();
         expect(options.dismissable).toBe(true);
+        expect(CodeSyncState.get(CODESYNC_STATES.USER_EMAIL)).toStrictEqual(TEST_EMAIL);
     });
 });
 
