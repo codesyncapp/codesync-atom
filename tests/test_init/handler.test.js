@@ -18,7 +18,8 @@ import {
     TEST_EMAIL,
     TEST_REPO_RESPONSE,
     TEST_USER,
-    waitFor
+    waitFor,
+    addUser
 } from "../helpers/helpers";
 import {SYNC_IGNORE_FILE_DATA} from "../../lib/constants";
 import {pathUtils} from "../../lib/utils/path_utils";
@@ -84,6 +85,7 @@ describe("initHandler",  () => {
             fetchMock
                 .mockResponseOnce(JSON.stringify({ status: true }))
                 .mockResponseOnce(JSON.stringify(user));
+            addUser(baseRepoPath);
             // Add repo in config
             const configUtil = new Config(repoPath, configPath);
             configUtil.addRepo();
