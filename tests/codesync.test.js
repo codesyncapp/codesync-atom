@@ -8,7 +8,13 @@ import yaml from "js-yaml";
 import untildify from "untildify";
 
 import extension from "../lib/codesync";
-import {getRepoInSyncMsg, getRepoIsSyncIgnoredMsg, NOTIFICATION, SYNCIGNORE} from "../lib/constants";
+import {
+    getRepoInSyncMsg,
+    getDirectoryIsSyncedMsg,
+    getDirectorySyncIgnoredMsg, 
+    NOTIFICATION, 
+    SYNCIGNORE
+} from "../lib/constants";
 import {
     SignUpHandler,
     SyncHandler,
@@ -32,8 +38,6 @@ import { CodeSyncState, CODESYNC_STATES } from "../lib/utils/state_utils";
 describe("Extension",() => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
-    const userFilePath = getUserFilePath(baseRepoPath);
-    const userData = {"dummy_email": {access_token: "ABC"}};
     const configPath = getConfigFilePath(baseRepoPath);
     const configData = {repos: {}};
     configData.repos[repoPath] = {branches: {}};
@@ -124,7 +128,7 @@ describe("Extension",() => {
     });
 
     test("With user, repo not synced", async () => {
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         atom.project.getPaths.mockReturnValue([repoPath]);
         await extension.activate({});
         expect(atom.menu.add).toHaveBeenCalledTimes(1);
@@ -144,7 +148,7 @@ describe("Extension",() => {
 
     test("With user, repo is disconnected", async () => {
         atom.project.getPaths.mockReturnValue([repoPath]);
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath);
         const _configData = JSON.parse(JSON.stringify(configData));
         _configData.repos[repoPath].is_disconnected = true;
         fs.writeFileSync(configPath, yaml.safeDump(_configData));
@@ -188,13 +192,15 @@ describe("Extension",() => {
         atom.project.getPaths.mockReturnValue([subDir]);
         await extension.activate({});
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        const repoInSyncMsg = getRepoInSyncMsg(subDirName);
-        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(repoInSyncMsg);
+        const json = getDirectoryIsSyncedMsg(subDir, repoPath);
+        expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(json.msg);
         const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options.buttons).toHaveLength(1);
         expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
         expect(options.dismissable).toBe(true);
+        expect(options.detail).toBe(json.detail);
         expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
+        expect(CodeSyncState.get(CODESYNC_STATES.IS_SUB_DIR)).toBe(true);
     });
 
     test("With user, repo is subDir and syncignored", async () => {
@@ -209,12 +215,15 @@ describe("Extension",() => {
         atom.project.getPaths.mockReturnValue([subDir]);
         await extension.activate({});
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
-        const msg = getRepoIsSyncIgnoredMsg(subDirName);
+        const msg = getDirectorySyncIgnoredMsg(subDir, repoPath);
         expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(msg);
         const options = atom.notifications.addInfo.mock.calls[0][1];
-        expect(options.buttons).toHaveLength(1);
-        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
+        expect(options.buttons).toHaveLength(3);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.OPEN_SYNCIGNORE);
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.TRACK_PARENT_REPO);
+        expect(options.buttons[2].text).toStrictEqual(NOTIFICATION.UNSYNC_PARENT_REPO);
         expect(options.dismissable).toBe(true);
         expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
+        expect(CodeSyncState.get(CODESYNC_STATES.IS_SYNCIGNORED_SUB_DIR)).toBe(true);
     });
 });
