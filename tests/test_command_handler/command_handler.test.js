@@ -234,6 +234,8 @@ describe("postSelectionUnsync", () => {
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNCED);
         expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
+        expect(CodeSyncState.get(CODESYNC_STATES.IS_SUB_DIR)).toBe(false);
+        expect(CodeSyncState.get(CODESYNC_STATES.IS_SYNCIGNORED_SUB_DIR)).toBe(false);
     });
 });
 
