@@ -182,7 +182,6 @@ describe("setupCodeSync",  () => {
         configUtil.addRepo();
         addUser(baseRepoPath);
         const subDir = path.join(repoPath, "directory");
-        atom.project.getPaths.mockReturnValue([repoPath]);
         const port = await setupCodeSync(subDir);
         // should return port number
         expect(port).toBeFalsy();
@@ -210,7 +209,6 @@ describe("setupCodeSync",  () => {
         const syncignorePath = path.join(repoPath, SYNCIGNORE);
         fs.writeFileSync(syncignorePath, subDirName);
         const subDir = path.join(repoPath, subDirName);
-        atom.project.getPaths.mockReturnValue([subDir]);
         const port = await setupCodeSync(subDir);
         // should return port number
         expect(port).toBeTruthy();

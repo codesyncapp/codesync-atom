@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import yaml from "js-yaml";
 import untildify from "untildify";
 
@@ -14,10 +15,10 @@ import {
     buildAtomEnv,
     Config,
     getConfigFilePath,
-    getUserFilePath,
     randomBaseRepoPath,
     randomRepoPath
 } from "../helpers/helpers";
+import { SYNCIGNORE } from "../../lib/constants";
 
 
 describe("generateMenu",  () => {
@@ -91,6 +92,40 @@ describe("generateMenu",  () => {
         expect(menuOptions[1]).toStrictEqual(MenuOptions.REPO_PLAYBACK);
         expect(menuOptions[2]).toStrictEqual(MenuOptions.DISCONNECT_REPO);
         expect(menuOptions[3]).toStrictEqual(MenuOptions.LOGOUT);
+    });
+
+    test("Sub directory is opened", () => {
+        addUser(baseRepoPath);
+        const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([subDir]);
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
+
+        const menu = generateMenu();
+
+        const menuOptions = menu[0]['submenu'][0]['submenu'];
+        expect(menuOptions).toHaveLength(4);
+        expect(menuOptions[0]).toStrictEqual(MenuOptions.FILE_PLAYBACK);
+        expect(menuOptions[1]).toStrictEqual(MenuOptions.REPO_PLAYBACK);
+        expect(menuOptions[2]).toStrictEqual(MenuOptions.DISCONNECT_REPO);
+        expect(menuOptions[3]).toStrictEqual(MenuOptions.LOGOUT);
+    });
+
+    test("Sync ignored sub directory", () => {
+        const subDirName = "directory";
+        const subDir = path.join(repoPath, "directory");
+        // Add subDir to .syncignore
+        const syncignorePath = path.join(repoPath, SYNCIGNORE);
+        fs.writeFileSync(syncignorePath, subDirName);
+        atom.project.getPaths.mockReturnValue([subDir]);
+        const configUtil = new Config(repoPath, configPath);
+        configUtil.addRepo();
+        addUser(baseRepoPath);
+        const menu = generateMenu();
+        const menuOptions = menu[0]['submenu'][0]['submenu'];
+        expect(menuOptions).toHaveLength(2);
+        expect(menuOptions[0]).toStrictEqual(MenuOptions.OPEN_SYNCIGNORE)
+        expect(menuOptions[1]).toStrictEqual(MenuOptions.LOGOUT);
     });
 });
 
@@ -167,7 +202,6 @@ describe("generateRightClickMenu",  () => {
         expect(menuOptions[2]).toStrictEqual(MenuOptions.DISCONNECT_REPO);
         expect(menuOptions[3]).toStrictEqual(MenuOptions.LOGOUT);
     });
-
 });
 
 describe("updateMenu",  () => {

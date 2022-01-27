@@ -28,7 +28,6 @@ import {
     buildAtomEnv,
     Config,
     getConfigFilePath,
-    getUserFilePath,
     randomBaseRepoPath,
     randomRepoPath
 } from "./helpers/helpers";
@@ -68,7 +67,7 @@ describe("Extension",() => {
         expect(atom.menu.add).toHaveBeenCalledTimes(1);
         expect(atom.contextMenu.add).toHaveBeenCalledTimes(1);
         expect(atom.views.addViewProvider).toHaveBeenCalledTimes(1);
-        expect(atom.commands.add).toHaveBeenCalledTimes(6);
+        expect(atom.commands.add).toHaveBeenCalledTimes(7);
 
         // Register commands
         expect(atom.commands.add.mock.calls[0][0]).toStrictEqual('atom-workspace');
@@ -117,7 +116,7 @@ describe("Extension",() => {
         expect(atom.menu.add).toHaveBeenCalledTimes(1);
         expect(atom.contextMenu.add).toHaveBeenCalledTimes(1);
         expect(atom.views.addViewProvider).toHaveBeenCalledTimes(1);
-        expect(atom.commands.add).toHaveBeenCalledTimes(6);
+        expect(atom.commands.add).toHaveBeenCalledTimes(7);
         // Should show Welcome msg
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.WELCOME_MSG);
@@ -134,7 +133,7 @@ describe("Extension",() => {
         expect(atom.menu.add).toHaveBeenCalledTimes(1);
         expect(atom.contextMenu.add).toHaveBeenCalledTimes(1);
         expect(atom.views.addViewProvider).toHaveBeenCalledTimes(1);
-        expect(atom.commands.add).toHaveBeenCalledTimes(6);
+        expect(atom.commands.add).toHaveBeenCalledTimes(7);
 
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.CONNECT_REPO);
@@ -156,7 +155,7 @@ describe("Extension",() => {
         expect(atom.menu.add).toHaveBeenCalledTimes(1);
         expect(atom.contextMenu.add).toHaveBeenCalledTimes(1);
         expect(atom.views.addViewProvider).toHaveBeenCalledTimes(1);
-        expect(atom.commands.add).toHaveBeenCalledTimes(6);
+        expect(atom.commands.add).toHaveBeenCalledTimes(7);
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addInfo.mock.calls[0][0]).toBe(NOTIFICATION.CONNECT_REPO);
         const options = atom.notifications.addInfo.mock.calls[0][1];
