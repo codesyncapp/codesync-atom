@@ -14,7 +14,9 @@ import {
     getConfigFilePath,
     randomBaseRepoPath,
     randomRepoPath,
-    waitFor
+    waitFor,
+    getSyncIgnoreFilePath,
+    DUMMY_FILE_CONTENT
 } from "../../helpers/helpers";
 import {populateBuffer} from "../../../lib/codesyncd/populate_buffer";
 
@@ -110,6 +112,36 @@ describe("handleDelete",  () => {
         const handler = new eventHandler();
         handler.handleDelete(filePath);
         expect(assertFileDeleteEvent(repoPath, fileRelPath)).toBe(true);
+    });
+
+    test("Sub dirctory, shadow exists",  () => {
+        const subDirName = "directory";
+        const subDir = path.join(repoPath, subDirName);
+        const nestedFile = path.join(subDir, fileRelPath);
+        const _shadowRepoPath = path.join(shadowRepoBranchPath, subDirName);
+        const _shadowFile = path.join(_shadowRepoPath, fileRelPath);
+        fs.writeFileSync(_shadowFile, DUMMY_FILE_CONTENT);
+
+        const handler = new eventHandler();
+        handler.handleDelete(nestedFile);
+        const relPath = path.join(subDirName, fileRelPath);
+        expect(assertFileDeleteEvent(repoPath, relPath)).toBe(true);
+    });
+
+    test("Sync ignored sub dirctory, shadow exists",  () => {
+        const subDirName = "directory";
+        const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
+        fs.writeFileSync(syncIgnorePath, subDirName);
+        const subDir = path.join(repoPath, subDirName);
+        const nestedFile = path.join(subDir, fileRelPath);
+        const _shadowRepoPath = path.join(shadowRepoBranchPath, subDirName);
+        const _shadowFile = path.join(_shadowRepoPath, fileRelPath);
+        fs.writeFileSync(_shadowFile, DUMMY_FILE_CONTENT);
+        const handler = new eventHandler();
+        handler.handleDelete(nestedFile);
+        // Verify correct diff file has been generated
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
     });
 
     test("With Daemon: Repo synced, shadow exists",  async () => {

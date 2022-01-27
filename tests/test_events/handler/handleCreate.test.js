@@ -1,17 +1,20 @@
 import fs from "fs";
 import path from "path";
 import untildify from "untildify";
-import {DEFAULT_BRANCH} from "../../../lib/constants";
+import {DEFAULT_BRANCH, SYNCIGNORE} from "../../../lib/constants";
 import {
     addUser,
     assertNewFileEvent,
-    buildAtomEnv, Config, getConfigFilePath,
+    buildAtomEnv,
+     Config, 
+    getConfigFilePath,
     getSyncIgnoreFilePath,
     mkDir,
     randomBaseRepoPath,
     randomRepoPath,
     rmDir,
-    writeFile
+    writeFile,
+    DUMMY_FILE_CONTENT
 } from "../../helpers/helpers";
 import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
@@ -63,11 +66,11 @@ describe("handleCreate",  () => {
         mkDir(diffsRepo);
         mkDir(originalsRepoBranchPath);
         mkDir(shadowRepoBranchPath);
-        writeFile(newFilePath, "use babel;");
-        writeFile(ignorableFilePath, "use babel;");
+        writeFile(newFilePath, DUMMY_FILE_CONTENT);
+        writeFile(ignorableFilePath, DUMMY_FILE_CONTENT);
         writeFile(syncIgnorePath, syncIgnoreData);
         // Create .syncignore shadow
-        const shadowSyncIgnore = path.join(shadowRepoBranchPath, ".syncignore");
+        const shadowSyncIgnore = path.join(shadowRepoBranchPath, SYNCIGNORE);
         fs.writeFileSync(shadowSyncIgnore, syncIgnoreData);
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
@@ -102,10 +105,36 @@ describe("handleCreate",  () => {
         expect(diffFiles).toHaveLength(0);
     });
 
-    test("Valid File",  () => {
+    test("New File",  () => {
         const handler = new eventHandler();
         handler.handleCreate(newFilePath);
         expect(assertNewFileEvent(repoPath, newRelPath)).toBe(true);
+    });
+
+    test("Sub directory; New File",  async () => {
+        const subDirName = "directory";
+        const subDir = path.join(repoPath, subDirName);
+        fs.mkdirSync(subDir);
+        const nestedFile = path.join(subDir, newRelPath);
+        fs.writeFileSync(nestedFile, DUMMY_FILE_CONTENT);
+        const handler = new eventHandler();
+        handler.handleCreate(nestedFile);
+        const relPath = path.join(subDirName, newRelPath);
+        expect(assertNewFileEvent(repoPath, relPath)).toBe(true);
+    });
+
+    test("Sync Ignored Sub directory; New File",  async () => {
+        const subDirName = "directory";
+        fs.writeFileSync(syncIgnorePath, subDirName);
+        const subDir = path.join(repoPath, subDirName);
+        fs.mkdirSync(subDir);
+        const nestedFile = path.join(subDir, newRelPath);
+        fs.writeFileSync(nestedFile, DUMMY_FILE_CONTENT);
+        const handler = new eventHandler();
+        handler.handleCreate(nestedFile);
+        // Verify no diff file has been generated
+        const diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
     });
 
     test("Valid File, InActive user",  async () => {

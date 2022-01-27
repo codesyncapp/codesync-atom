@@ -183,7 +183,7 @@ describe("Extension",() => {
         expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
     });
 
-    test("With user, repo is subDir and synced", async () => {
+    test("With user, repo is sub directory and synced", async () => {
         const subDirName = "directory";
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
@@ -203,7 +203,7 @@ describe("Extension",() => {
         expect(CodeSyncState.get(CODESYNC_STATES.IS_SUB_DIR)).toBe(true);
     });
 
-    test("With user, repo is subDir and syncignored", async () => {
+    test("With user, repo is sub directory and syncignored", async () => {
         const subDirName = "directory";
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
