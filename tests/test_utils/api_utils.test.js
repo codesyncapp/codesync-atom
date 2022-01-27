@@ -30,7 +30,7 @@ describe('checkServerDown', () => {
     });
 
     afterEach(() => {
-        fs.rmdirSync(baseRepoPath, { recursive: true});
+        fs.rmSync(baseRepoPath, { recursive: true});
     });
 
     test("with status: true", async () => {

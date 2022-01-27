@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import yaml from "js-yaml";
 import untildify from "untildify";
 import getBranchName from "current-git-branch";
 
@@ -12,10 +11,8 @@ import {
     DUMMY_FILE_CONTENT,
     getConfigFilePath,
     getSyncIgnoreFilePath,
-    getUserFilePath,
     randomBaseRepoPath,
-    randomRepoPath,
-    TEST_EMAIL
+    randomRepoPath
 } from "../../helpers/helpers";
 import {pathUtils} from "../../../lib/utils/path_utils";
 import {eventHandler} from "../../../lib/events/event_handler";
@@ -188,6 +185,58 @@ describe("handleChangeEvent",  () => {
         handler.handleChangeEvent(editor);
         expect(assertChangeEvent(repoPath, diffsRepo, DUMMY_FILE_CONTENT, updatedText,
             fileRelPath, shadowFilePath)).toBe(true);
+    });
+
+    test("Sub directory, should add diff and update shadow file", () => {
+        const subDirName = "directory";
+        const subDir = path.join(repoPath, subDirName);
+        fs.mkdirSync(subDir);
+        const nestedFile = path.join(subDir, fileRelPath);
+        const _shadowRepoPath = path.join(shadowRepoBranchPath, subDirName);
+        const _shadowFile = path.join(_shadowRepoPath, fileRelPath);
+        fs.mkdirSync(_shadowRepoPath);
+        fs.writeFileSync(nestedFile, DUMMY_FILE_CONTENT);
+        fs.writeFileSync(_shadowFile, DUMMY_FILE_CONTENT);
+        const updatedText = `${DUMMY_FILE_CONTENT} Changed data`;
+        const editor = {
+            getPath: function () {
+                return nestedFile;
+            },
+            getText: function () {
+                return updatedText;
+            }
+        };
+        const handler = new eventHandler();
+        handler.handleChangeEvent(editor);
+        const relPath = path.join(subDirName, fileRelPath);
+        expect(assertChangeEvent(repoPath, diffsRepo, DUMMY_FILE_CONTENT, updatedText,
+            relPath, _shadowFile)).toBe(true);
+    });
+
+    test("Sync Ignored sub directory, should not add diff", () => {
+        const subDirName = "directory";
+        fs.writeFileSync(syncIgnorePath, subDirName);
+        const subDir = path.join(repoPath, subDirName);
+        fs.mkdirSync(subDir);
+        const nestedFile = path.join(subDir, fileRelPath);
+        const _shadowRepoPath = path.join(shadowRepoBranchPath, subDirName);
+        const _shadowFile = path.join(_shadowRepoPath, fileRelPath);
+        fs.mkdirSync(_shadowRepoPath);
+        fs.writeFileSync(nestedFile, DUMMY_FILE_CONTENT);
+        fs.writeFileSync(_shadowFile, DUMMY_FILE_CONTENT);
+        const updatedText = `${DUMMY_FILE_CONTENT} Changed data`;
+        const editor = {
+            getPath: function () {
+                return nestedFile;
+            },
+            getText: function () {
+                return updatedText;
+            }
+        };
+        const handler = new eventHandler();
+        handler.handleChangeEvent(editor);
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
     });
 
     test("Synced repo, InActive user, should not add diff", () => {

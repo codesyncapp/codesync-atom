@@ -11,11 +11,14 @@ import {
     addUser,
     assertRenameEvent,
     buildAtomEnv,
-    Config, DUMMY_FILE_CONTENT, FILE_ID,
+    Config, DUMMY_FILE_CONTENT,
+    FILE_ID,
     getConfigFilePath,
     randomBaseRepoPath,
-    randomRepoPath, TEST_EMAIL,
-    waitFor
+    randomRepoPath,
+    TEST_EMAIL,
+    waitFor,
+    getSyncIgnoreFilePath
 } from "../../helpers/helpers";
 import {populateBuffer} from "../../../lib/codesyncd/populate_buffer";
 
@@ -118,6 +121,44 @@ describe("handleRenameFile",  () => {
         expect(assertRenameEvent(repoPath, configPath, fileRelPath, newRelPath)).toBe(true);
     });
 
+    test("For File in sub directory",  () => {
+        const subDirName = "directory";
+        const subDir = path.join(repoPath, subDirName);
+        fs.mkdirSync(subDir);
+        const nestedFile = path.join(subDir, fileRelPath);
+        const _shadowRepoPath = path.join(shadowRepoBranchPath, subDirName);
+        const _shadowFile = path.join(_shadowRepoPath, fileRelPath);
+        fs.mkdirSync(_shadowRepoPath);
+        fs.writeFileSync(_shadowFile, DUMMY_FILE_CONTENT);
+        const _newFilePath = path.join(subDir, newRelPath);
+        fs.writeFileSync(_newFilePath, DUMMY_FILE_CONTENT);
+        const handler = new eventHandler();
+        handler.handleRename(nestedFile, _newFilePath);
+        const relPath = path.join(subDirName, fileRelPath);
+        const _newRelPath = path.join(subDirName, newRelPath);
+
+        expect(assertRenameEvent(repoPath, configPath, relPath, _newRelPath, 1, false)).toBe(true);
+    });
+
+    test("File in sync-ignored sub directory",  () => {
+        const subDirName = "directory";
+        const syncIgnorePath = getSyncIgnoreFilePath(repoPath);
+        fs.writeFileSync(syncIgnorePath, subDirName);
+        const subDir = path.join(repoPath, subDirName);
+        fs.mkdirSync(subDir);
+        const nestedFile = path.join(subDir, fileRelPath);
+        const _shadowRepoPath = path.join(shadowRepoBranchPath, subDirName);
+        const _shadowFile = path.join(_shadowRepoPath, fileRelPath);
+        fs.mkdirSync(_shadowRepoPath);
+        fs.writeFileSync(_shadowFile, DUMMY_FILE_CONTENT);
+        const _newFilePath = path.join(subDir, newRelPath);
+        fs.writeFileSync(_newFilePath, DUMMY_FILE_CONTENT);
+        const handler = new eventHandler();
+        handler.handleRename(nestedFile, _newFilePath);
+        let diffFiles = fs.readdirSync(diffsRepo);
+        expect(diffFiles).toHaveLength(0);
+    });
+
     test("With Daemon: For File",  async () => {
         // Write data to new file
         fs.writeFileSync(newFilePath, "use babel;");
@@ -137,7 +178,7 @@ describe("handleRenameFile",  () => {
         expect(diffFiles).toHaveLength(0);
     });
 
-    test("For file renamed to nested directory",  () => {
+    test("For file renamed to sub directory",  () => {
         // Write data to new file
         const _newRelPath = path.join("new", "file.js");
         const renamedFilePath = path.join(repoPath, _newRelPath);

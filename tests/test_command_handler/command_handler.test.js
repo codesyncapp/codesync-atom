@@ -23,6 +23,7 @@ import {WEB_APP_URL} from "../../lib/settings";
 import {readYML} from "../../lib/utils/common";
 import {DEFAULT_BRANCH} from "../../lib/constants";
 import getBranchName from "current-git-branch";
+import { CodeSyncState, CODESYNC_STATES } from "../../lib/utils/state_utils";
 
 const {shell} = require('electron');
 
@@ -102,6 +103,7 @@ describe("SyncHandler", () => {
         expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(repoInSyncMsg);
         const options = atom.notifications.addInfo.mock.calls[0][1];
         expect(options).toBeFalsy();
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(true);
     });
 
 });
@@ -130,15 +132,30 @@ describe("unSyncHandler", () => {
         fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
-    test("No Repo Path", async () => {
+    test("No Repo Path", () => {
         atom.project.getPaths.mockReturnValue([undefined]);
-        await unSyncHandler();
+        unSyncHandler();
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(0);
     });
 
-    test("Ask Unsync confirmation", async () => {
+    test("Ask Unsync confirmation", () => {
         atom.project.getPaths.mockReturnValue([repoPath]);
-        await unSyncHandler();
+        unSyncHandler();
+        expect(atom.notifications.addWarning).toHaveBeenCalledTimes(1);
+        expect(atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_CONFIRMATION);
+        const options = atom.notifications.addWarning.mock.calls[0][1];
+        expect(options.buttons).toHaveLength(2);
+        expect(options.buttons[0].text).toStrictEqual(NOTIFICATION.YES);
+        expect(options.buttons[0].onDidClick).toBeTruthy();
+        expect(options.buttons[1].text).toStrictEqual(NOTIFICATION.CANCEL);
+        expect(options.buttons[1].onDidClick).toBeTruthy();
+        expect(options.dismissable).toBe(true);
+    });
+
+    test("Ask Unsync confirmation; Nested dir of synced repo",  async () => {
+        const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([subDir]);
+        unSyncHandler();
         expect(atom.notifications.addWarning).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addWarning.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_CONFIRMATION);
         const options = atom.notifications.addWarning.mock.calls[0][1];
@@ -216,6 +233,9 @@ describe("postSelectionUnsync", () => {
         expect(atom.notifications.addError).toHaveBeenCalledTimes(0);
         expect(atom.notifications.addInfo).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addInfo.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNCED);
+        expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
+        expect(CodeSyncState.get(CODESYNC_STATES.IS_SUB_DIR)).toBe(false);
+        expect(CodeSyncState.get(CODESYNC_STATES.IS_SYNCIGNORED_SUB_DIR)).toBe(false);
     });
 });
 
@@ -251,6 +271,19 @@ describe("trackRepoHandler", () => {
 
     test("Repo in config", async () => {
         global.atom.project.getPaths.mockReturnValue([repoPath]);
+        configData.repos[repoPath] = {
+            id: 1234,
+            branches: {},
+        };
+        fs.writeFileSync(configPath, yaml.safeDump(configData));
+        const playbackLink = trackRepoHandler();
+        expect(shell.openExternal).toHaveBeenCalledTimes(1);
+        expect(playbackLink.startsWith(WEB_APP_URL)).toBe(true);
+    });
+
+    test("With nested directory",  async () => {
+        const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([subDir]);
         configData.repos[repoPath] = {
             id: 1234,
             branches: {},
@@ -332,7 +365,6 @@ describe("trackFileHandler", () => {
         expect(shell.openExternal).toHaveBeenCalledTimes(0);
     });
 
-
     test("File Path in config", () => {
         // Mock data
         global.atom.project.getPaths.mockReturnValue([repoPath]);
@@ -353,4 +385,27 @@ describe("trackFileHandler", () => {
         expect(shell.openExternal).toHaveBeenCalledTimes(1);
     });
 
+    test("With nested directory",  () => {
+        // Mock data
+        const subDir = path.join(repoPath, "directory");
+        atom.project.getPaths.mockReturnValue([subDir]);
+
+        global.atom.workspace.getActiveTextEditor.mockReturnValueOnce({
+            getPath: jest.fn(() => {
+                return path.join(repoPath, "file.js");
+            })
+        });
+
+        getBranchName.mockReturnValueOnce(DEFAULT_BRANCH);
+        // Update config file
+        configData.repos[repoPath] = {
+            id: 1234,
+            branches: {}
+        };
+        configData.repos[repoPath].branches[DEFAULT_BRANCH] = {"file.js": 1234};
+        fs.writeFileSync(configPath, yaml.safeDump(configData));
+
+        trackFileHandler();
+        expect(shell.openExternal).toHaveBeenCalledTimes(1);
+    });
 });

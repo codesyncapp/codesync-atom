@@ -1,7 +1,7 @@
 import fs from "fs";
 import yaml from "js-yaml";
 import { isRepoActive, readYML } from "../../../lib/utils/common";
-import { Config, getConfigFilePath, randomBaseRepoPath } from "../../helpers/helpers";
+import { Config, getConfigFilePath, randomBaseRepoPath, randomRepoPath } from "../../helpers/helpers";
 
 const baseRepoPath = randomBaseRepoPath();
 const configPath = getConfigFilePath(baseRepoPath);
@@ -14,14 +14,15 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-    fs.rmdirSync(baseRepoPath, { recursive: true });
+    fs.rmSync(baseRepoPath, { recursive: true });
 });
 
 test('Active Repo', () => {
-    const configUtil = new Config("path1", configPath);
+    const repoPath = randomRepoPath();
+    const configUtil = new Config(repoPath, configPath);
     configUtil.addRepo();
     const config = readYML(configPath);
-    expect(isRepoActive(config, "path1")).toBe(true);
+    expect(isRepoActive(config, repoPath)).toBe(true);
 });
 
 test('Disconnected Repo', () => {

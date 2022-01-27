@@ -13,7 +13,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    fs.rmdirSync(repoPath, { recursive: true });
+    fs.rmSync(repoPath, { recursive: true });
 });
 
 test('reads file', () => {

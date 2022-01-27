@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2022-01-27
+### Added
+- Checking if opened repo is a sub directory of already synced repo
+- Different views and notification buttons for subDir and syncignored subDir
+- Cannot treat sub directory as a separate repo
+
 ## [3.3.2] - 2022-01-11
 ### Added
 - Fixed logging socket connection error 
@@ -93,7 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - tests written for codesync.js
 - eventHandler class introduced
-- Improved shouldIgnoreFile
+- Improved shouldIgnorePath
 
 ## [2.26.8] - 2021-09-29
 ### Changed
