@@ -210,8 +210,8 @@ describe("postSelectionUnsync", () => {
         atom.project.getPaths.mockReturnValue([repoPath]);
         const configUtil = new Config(repoPath, configPath);
         configUtil.addRepo();
-        fetchMock.mockResponseOnce(JSON.stringify({error: "NOT SO FAST"}));
-
+        const errJSON = {error: {message: "NOT SO FAST"}};
+        fetchMock.mockResponseOnce(JSON.stringify(errJSON));
         await postSelectionUnsync(repoPath, atom.notifications.addInfo());
         expect(atom.notifications.addError).toHaveBeenCalledTimes(1);
         expect(atom.notifications.addError.mock.calls[0][0]).toStrictEqual(NOTIFICATION.REPO_UNSYNC_FAILED);

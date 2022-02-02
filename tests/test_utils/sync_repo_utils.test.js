@@ -1,7 +1,7 @@
 import fetchMock from "jest-fetch-mock";
 import { updateRepo} from "../../lib/utils/sync_repo_utils";
-import {API_ENDPOINT} from "../../lib/constants";
-
+import { API_ENDPOINT } from "../../lib/constants";
+import { INVALID_TOKEN_JSON } from "../helpers/helpers";
 
 describe('updateRepo', () => {
     beforeEach(() => {
@@ -31,11 +31,11 @@ describe('updateRepo', () => {
     });
 
     test("with auth error", async () => {
-        const err = {"error": "Invalid token"};
+        const err = INVALID_TOKEN_JSON
         fetchMock.mockResponseOnce(JSON.stringify(err));
         const resp = await updateRepo("ACCESS_TOKEN", "REPO_ID", {"is_in_sync" : false});
         expect(resp.response).toStrictEqual({});
-        expect(resp.error).toStrictEqual(err.error);
+        expect(resp.error).toStrictEqual(err.error.message);
         expect(assertAPICall()).toBe(true);
     });
 

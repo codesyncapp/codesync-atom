@@ -26,7 +26,7 @@ describe('uploadRepoToServer', () => {
     test('Invalid token', async () => {
         fetchMock.mockResponseOnce(JSON.stringify(INVALID_TOKEN_JSON));
         const res = await uploadRepoToServer("INVALID_TOKEN", {});
-        expect(res.error).toBe(INVALID_TOKEN_JSON.error);
+        expect(res.error).toBe(INVALID_TOKEN_JSON.error.message);
         expect(res.response).toStrictEqual({});
         expect(assertAPICall("INVALID_TOKEN")).toBe(true);
 
@@ -69,7 +69,7 @@ describe('uploadFile', () => {
     test('Invalid token', async () => {
         fetchMock.mockResponseOnce(JSON.stringify(INVALID_TOKEN_JSON));
         const res = await uploadFile("INVALID_TOKEN", {});
-        expect(res.error).toBe(INVALID_TOKEN_JSON.error);
+        expect(res.error).toBe(INVALID_TOKEN_JSON.error.message);
         expect(res.response).toStrictEqual({});
         expect(assertAPICall("INVALID_TOKEN")).toBe(true);
     });
@@ -155,7 +155,7 @@ describe('uploadFileToServer', () => {
         fetchMock.mockResponseOnce(JSON.stringify(INVALID_TOKEN_JSON));
         const res = await uploadFileToServer("ACCESS_TOKEN", 12345, DEFAULT_BRANCH, filePath,
             "file.txt", "");
-        expect(res.error).toStrictEqual(INVALID_TOKEN_JSON.error);
+        expect(res.error).toStrictEqual(INVALID_TOKEN_JSON.error.message);
         expect(assertAPICall()).toBe(true);
     });
 
