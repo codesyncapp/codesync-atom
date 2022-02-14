@@ -4,9 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.2] - 2022-02-
+### Fixed
+- Force uploading file for rename-event if file_id is null in config
+
 ## [3.5.1] - 2022-02-15
 ### Fixed
-- Treating multiple socket connections from same user as separate channels to avoid duplicate prosessing of diffs
+- Treating multiple socket connections from same user as separate channels to avoid duplicate processing of diffs
 
 ## [3.5.0] - 2022-02-14
 ### Added
@@ -26,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.3.2] - 2022-01-11
 ### Added
-- Fixed logging socket connection error 
+- Fixed logging socket connection error
 - Handling an error in splitting filePath to get relPath
 
 ## [3.3.1] - 2022-01-07
@@ -294,7 +298,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.4.0] - 2021-06-22
 ### Added
 - Fixed lstat for deleted file, fixed new-file upload config issue
-  
+
 ## [2.3.0] - 2021-06-18
 ### Added
 - Checking lstat after verifying file is syncable
