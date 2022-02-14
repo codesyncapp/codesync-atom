@@ -11,19 +11,18 @@ import fetchMock from "jest-fetch-mock";
 
 import {pathUtils} from "../../lib/utils/path_utils";
 import {createSystemDirectories} from "../../lib/utils/setup_utils";
-import {DEFAULT_BRANCH, STATUS_BAR_MSGS} from "../../lib/constants";
+import {DEFAULT_BRANCH} from "../../lib/constants";
 import {
     addUser,
     buildAtomEnv,
     DUMMY_FILE_CONTENT,
     getConfigFilePath,
     getSeqTokenFilePath,
-    getUserFilePath, PRE_SIGNED_URL,
+    PRE_SIGNED_URL,
     randomBaseRepoPath,
     randomRepoPath,
     TEST_EMAIL,
     TEST_REPO_RESPONSE,
-    TEST_USER,
     waitFor
 } from "../helpers/helpers";
 import {bufferHandler} from "../../lib/codesyncd/handlers/buffer_handler";
@@ -32,17 +31,12 @@ import {SocketClient} from "../../lib/codesyncd/websocket/socket_client";
 import {SocketEvents} from "../../lib/codesyncd/websocket/socket_events";
 import {readYML} from "../../lib/utils/common";
 import {DIFF_SOURCE} from "../../lib/constants";
-import {recallDaemon} from "../../lib/codesyncd/codesyncd";
-import {daemonMessages} from "../../lib/views";
 
 
 describe("bufferHandler", () => {
     const baseRepoPath = randomBaseRepoPath();
     const repoPath = randomRepoPath();
     const configPath = getConfigFilePath(baseRepoPath);
-    const userFilePath = getUserFilePath(baseRepoPath);
-    const userData = {};
-    userData[TEST_EMAIL] = {access_token: "ABC"};
     const sequenceTokenFilePath = getSeqTokenFilePath(baseRepoPath);
 
     const accessToken = "ACCESS_TOKEN";
@@ -110,13 +104,7 @@ describe("bufferHandler", () => {
         const users = {};
         users[TEST_EMAIL] = "";
         fs.writeFileSync(sequenceTokenFilePath, yaml.safeDump(users));
-        const userData = {};
-        userData[TEST_EMAIL] = {
-            access_token: "ACCESS_TOKEN",
-            access_key: TEST_USER.iam_access_key,
-            secret_key: TEST_USER.iam_secret_key
-        };
-        fs.writeFileSync(userFilePath, yaml.safeDump(userData));
+        addUser(baseRepoPath, true);
     };
 
     const addNewFileDiff = (branch = DEFAULT_BRANCH) => {
@@ -156,18 +144,10 @@ describe("bufferHandler", () => {
         return handler.addDiff(relPath, "");
     };
 
-    const assertDiffsCount = (diffsCount = 0, command = undefined,
-                              text = STATUS_BAR_MSGS.DEFAULT, times=1) => {
+    const assertDiffsCount = (diffsCount = 0) => {
         // Verify correct diff file has been generated
         let diffFiles = fs.readdirSync(diffsRepo);
         expect(diffFiles).toHaveLength(diffsCount);
-
-        const daemonMsgView = new daemonMessages({ text });
-        const view = atom.views.getView(daemonMsgView);
-        const priority = 1;
-        expect(statusBarItem.addLeftTile).toHaveBeenCalledTimes(times);
-        const tileData = statusBarItem.addLeftTile.mock.calls[0][0];
-        expect(tileData).toStrictEqual({ item: view, priority });
         return true;
     };
 
@@ -175,23 +155,23 @@ describe("bufferHandler", () => {
         fs.rmSync(configPath);
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.NO_CONFIG)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
     });
 
-    test("Server is down, no diff", async () => {
+    test("No diff", async () => {
         fetchMock.mockResponse(JSON.stringify({status: false}));
         addRepo();
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.DEFAULT)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
     });
 
-    test("Server is down, 1 valid diff", async () => {
+    test("1 valid diff", async () => {
         addRepo();
         addNewFileDiff();
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(1, undefined)).toBe(true);
+        expect(assertDiffsCount(1)).toBe(true);
     });
 
     test("No repo opened, no diff", async () => {
@@ -199,14 +179,14 @@ describe("bufferHandler", () => {
         atom.project.getPaths.mockReturnValue([undefined]);
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.NO_REPO_OPEN)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
     });
 
     test("Repo opened but not synced", async () => {
         addUser(baseRepoPath);
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, "CodeSync.ConnectRepo", STATUS_BAR_MSGS.CONNECT_REPO)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
     });
 
     test("Repo opened and synced", async () => {
@@ -265,20 +245,20 @@ describe("bufferHandler", () => {
         addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, "CodeSync.ConnectRepo", STATUS_BAR_MSGS.CONNECT_REPO)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
     });
 
     test("No valid user", async () => {
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, "CodeSync.SignUp", STATUS_BAR_MSGS.AUTHENTICATION_FAILED)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
     });
 
     test("No active user", async () => {
         addUser(baseRepoPath, false);
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, "CodeSync.SignUp", STATUS_BAR_MSGS.AUTHENTICATION_FAILED)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
     });
 
     test("Diff file for disconnected repo", async () => {
@@ -286,7 +266,7 @@ describe("bufferHandler", () => {
         addChangesDiff();
         const handler = new bufferHandler(statusBarItem);
         await handler.run();
-        expect(assertDiffsCount(0, "CodeSync.ConnectRepo", STATUS_BAR_MSGS.CONNECT_REPO)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
     });
 
     test("Diff for non-synced branch", async () => {
@@ -359,7 +339,7 @@ describe("bufferHandler", () => {
         };
         const handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
-        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.SYNCING)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
         expect(fs.existsSync(diffFilePath)).toBe(false);
     });
 
@@ -400,7 +380,7 @@ describe("bufferHandler", () => {
         };
         const handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
-        expect(assertDiffsCount(1, "CodeSync.SignUp", STATUS_BAR_MSGS.AUTHENTICATION_FAILED)).toBe(true);
+        expect(assertDiffsCount(1)).toBe(true);
         expect(fs.existsSync(diffFilePath)).toBe(true);
     });
 
@@ -421,7 +401,7 @@ describe("bufferHandler", () => {
         };
         const handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
-        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.SYNCING)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
         expect(fs.existsSync(diffFilePath)).toBe(false);
         const config = readYML(configPath);
         // As diff was for new file, verify that file has been uploaded to server
@@ -451,7 +431,7 @@ describe("bufferHandler", () => {
         };
         let handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
-        expect(assertDiffsCount(1, undefined, STATUS_BAR_MSGS.SYNCING)).toBe(true);
+        expect(assertDiffsCount(1)).toBe(true);
         // File should be deleted from .originals
         expect(fs.existsSync(originalsFilePath)).toBe(false);
         expect(fs.existsSync(diffFilePathForNewFile)).toBe(false);
@@ -594,7 +574,7 @@ describe("bufferHandler", () => {
         };
         const handled = await webSocketEvents.onMessage(msg);
         expect(handled).toBe(true);
-        expect(assertDiffsCount(0, undefined, STATUS_BAR_MSGS.SYNCING)).toBe(true);
+        expect(assertDiffsCount(0)).toBe(true);
         expect(fs.existsSync(diffFilePath)).toBe(false);
         const config = readYML(configPath);
         // As diff was for new file, verify that file has been uploaded to server
@@ -603,10 +583,4 @@ describe("bufferHandler", () => {
         // File should be deleted from .originals
         expect(fs.existsSync(originalsFilePath)).toBe(false);
     });
-
-    test("codesyncd.ts", async () => {
-        recallDaemon(statusBarItem);
-        expect(global.IS_CODESYNC_DEV).toBe(true);
-    });
-
 });

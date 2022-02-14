@@ -43,6 +43,7 @@ describe("createSystemDirectories",  () => {
         expect(lsResult.includes(".originals")).toBe(true);
         expect(lsResult.includes(".shadow")).toBe(true);
         expect(lsResult.includes(".deleted")).toBe(true);
+        expect(lsResult.includes(".locks")).toBe(true);
         expect(lsResult.includes("config.yml")).toBe(true);
         expect(lsResult.includes("sequence_token.yml")).toBe(true);
     });
@@ -80,6 +81,7 @@ describe("setupCodeSync",  () => {
         expect(lsResult.includes(".originals")).toBe(true);
         expect(lsResult.includes(".shadow")).toBe(true);
         expect(lsResult.includes(".deleted")).toBe(true);
+        expect(lsResult.includes(".locks")).toBe(true);
         expect(lsResult.includes("config.yml")).toBe(true);
         expect(lsResult.includes("sequence_token.yml")).toBe(true);
         // should return port number
