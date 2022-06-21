@@ -4,7 +4,7 @@
 
 import fs from "fs";
 import path from "path";
-import lockFile from "lockfile";
+import lockFile from "proper-lockfile";
 
 import untildify from "untildify";
 import {generateSettings} from "../../lib/settings";
@@ -23,6 +23,7 @@ import {createSystemDirectories} from "../../lib/utils/setup_utils";
 import {recallDaemon} from "../../lib/codesyncd/codesyncd";
 import {daemonMessages} from "../../lib/views";
 import {STATUS_BAR_MSGS, COMMAND, SYNCIGNORE} from "../../lib/constants";
+import { LockUtils } from "../../lib/utils/lock_utils";
 
 describe("codesyncd: locks", () => {
     const baseRepoPath = randomBaseRepoPath();
@@ -39,13 +40,12 @@ describe("codesyncd: locks", () => {
     });
 
     afterEach(() => {
-        lockFile.unlockSync(settings.POPULATE_BUFFER_LOCK_FILE);
-        lockFile.unlockSync(settings.DIFFS_SEND_LOCK_FILE);
         fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
 
     test("acquirePopulateBufferLock", () => {
-        acquirePopulateBufferLock();
+        const lockUtils = new LockUtils();
+        lockUtils.acquirePopulateBufferLock();
         expect(lockFile.checkSync(settings.POPULATE_BUFFER_LOCK_FILE)).toBe(true);
         expect(CodeSyncState.get(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED)).toBe(true);
 		expect(lockFile.checkSync(settings.DIFFS_SEND_LOCK_FILE)).toBe(false);
@@ -53,7 +53,8 @@ describe("codesyncd: locks", () => {
     });
 
 	test("acquireSendDiffsLock", () => {
-        acquireSendDiffsLock();
+        const lockUtils = new LockUtils();
+        lockUtils.acquireSendDiffsLock();
 		expect(lockFile.checkSync(settings.DIFFS_SEND_LOCK_FILE)).toBe(true);
 		expect(CodeSyncState.get(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED)).toBe(true);
         expect(lockFile.checkSync(settings.POPULATE_BUFFER_LOCK_FILE)).toBe(false);
@@ -93,8 +94,6 @@ describe("codesyncd: recallDaemon", () => {
     });
 
     afterEach(() => {
-        lockFile.unlockSync(settings.POPULATE_BUFFER_LOCK_FILE);
-        lockFile.unlockSync(settings.DIFFS_SEND_LOCK_FILE);
         fs.rmSync(repoPath, { recursive: true, force: true });
         fs.rmSync(baseRepoPath, { recursive: true, force: true });
     });
@@ -177,7 +176,8 @@ describe("codesyncd: recallDaemon", () => {
     });
 
     test("with lock acquired for populateBuffer", () => {
-        acquirePopulateBufferLock();
+        const lockUtils = new LockUtils();
+        lockUtils.acquirePopulateBufferLock();
         recallDaemon(statusBarItem);
         expect(lockFile.checkSync(settings.POPULATE_BUFFER_LOCK_FILE)).toBe(true);
 		expect(lockFile.checkSync(settings.DIFFS_SEND_LOCK_FILE)).toBe(true);
@@ -186,7 +186,8 @@ describe("codesyncd: recallDaemon", () => {
     });
 
     test("with lock acquired for diffsSend", () => {
-        acquireSendDiffsLock();
+        const lockUtils = new LockUtils();
+        lockUtils.acquireSendDiffsLock();
         recallDaemon(statusBarItem);
         expect(lockFile.checkSync(settings.POPULATE_BUFFER_LOCK_FILE)).toBe(true);
 		expect(lockFile.checkSync(settings.DIFFS_SEND_LOCK_FILE)).toBe(true);
@@ -196,7 +197,8 @@ describe("codesyncd: recallDaemon", () => {
 
     test("with diffsSendLock acquried by other instance", () => {
         lockFile.lockSync(settings.DIFFS_SEND_LOCK_FILE);
-        acquirePopulateBufferLock();
+        const lockUtils = new LockUtils();
+        lockUtils.acquirePopulateBufferLock();
         recallDaemon(statusBarItem);
         expect(CodeSyncState.get(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED)).toBe(true);
 		expect(CodeSyncState.get(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED)).toBe(false);
@@ -204,7 +206,8 @@ describe("codesyncd: recallDaemon", () => {
 
     test("with populateBuffer acquried by other instance", () => {
         lockFile.lockSync(settings.POPULATE_BUFFER_LOCK_FILE);
-        acquireSendDiffsLock();
+        const lockUtils = new LockUtils();
+        lockUtils.acquireSendDiffsLock();
         recallDaemon(statusBarItem);
         expect(CodeSyncState.get(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED)).toBe(false);
 		expect(CodeSyncState.get(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED)).toBe(true);

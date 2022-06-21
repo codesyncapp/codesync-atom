@@ -11,7 +11,6 @@ import fetchMock from "jest-fetch-mock";
 
 import {pathUtils} from "../../lib/utils/path_utils";
 import {createSystemDirectories} from "../../lib/utils/setup_utils";
-import {CODESYNC_STATES, CodeSyncState} from "../../lib/utils/state_utils";
 import {DEFAULT_BRANCH} from "../../lib/constants";
 import {
     addUser,
@@ -32,6 +31,8 @@ import {SocketClient} from "../../lib/codesyncd/websocket/socket_client";
 import {SocketEvents} from "../../lib/codesyncd/websocket/socket_events";
 import {readYML} from "../../lib/utils/common";
 import {DIFF_SOURCE} from "../../lib/constants";
+import { CodeSyncState, CODESYNC_STATES } from "../../lib/utils/state_utils";
+import { LockUtils } from "../../lib/utils/lock_utils";
 
 
 describe("bufferHandler", () => {
@@ -80,13 +81,15 @@ describe("bufferHandler", () => {
         fs.mkdirSync(baseRepoPath, {recursive: true});
         createSystemDirectories();
         fs.mkdirSync(repoPath, {recursive: true});
+        CodeSyncState.set(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED, true);
         CodeSyncState.set(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED, true);
     });
 
     afterEach(() => {
+        CodeSyncState.set(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED, false);
+        CodeSyncState.set(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED, false);
         fs.rmSync(repoPath, {recursive: true, force: true});
         fs.rmSync(baseRepoPath, {recursive: true, force: true});
-        CodeSyncState.set(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED, false);
     });
 
     const addRepo = (isDisconnected = false) => {
@@ -571,6 +574,9 @@ describe("bufferHandler", () => {
     });
 
     test("SocketEvents: onMessage, Changes for non synced file", async () => {
+        const lockUtils = new LockUtils();
+        lockUtils.acquireSendDiffsLock();
+        lockUtils.acquirePopulateBufferLock();    
         addRepo();
         fs.writeFileSync(newFilePath, DUMMY_FILE_CONTENT);
         const response = {id: newFileId, url: PRE_SIGNED_URL};

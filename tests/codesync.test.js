@@ -5,7 +5,6 @@
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-import lockFile from "lockfile";
 import untildify from "untildify";
 
 import extension from "../lib/codesync";
@@ -35,6 +34,7 @@ import {
 import {logout} from "../lib/utils/auth_utils";
 import { CodeSyncState, CODESYNC_STATES } from "../lib/utils/state_utils";
 import { generateSettings } from "../lib/settings";
+import { LockUtils } from "../lib/utils/lock_utils";
 
 describe("Extension: activate",() => {
     const baseRepoPath = randomBaseRepoPath();
@@ -226,71 +226,5 @@ describe("Extension: activate",() => {
         expect(options.dismissable).toBe(true);
         expect(CodeSyncState.get(CODESYNC_STATES.REPO_IS_IN_SYNC)).toBe(false);
         expect(CodeSyncState.get(CODESYNC_STATES.IS_SYNCIGNORED_SUB_DIR)).toBe(true);
-    });
-});
-
-describe("Extension: deactivate",() => {
-    const baseRepoPath = randomBaseRepoPath();
-    untildify.mockReturnValue(baseRepoPath);
-    const settings = generateSettings();
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        buildAtomEnv();
-        extension.subscriptions = {dispose: jest.fn()};
-        jest.spyOn(global.console, 'log');
-        extension.consumeStatusBar({
-            addRightTile: jest.fn(),
-            getRightTiles: jest.fn(() => []),
-            addLeftTile: jest.fn(),
-            getLeftTiles: jest.fn(() => []),
-        });
-        untildify.mockReturnValue(baseRepoPath);
-        createSystemDirectories();
-        const settings = generateSettings();
-        lockFile.lockSync(settings.POPULATE_BUFFER_LOCK_FILE);
-        lockFile.lockSync(settings.DIFFS_SEND_LOCK_FILE);
-    });
-
-    afterEach(() => {
-        lockFile.unlockSync(settings.POPULATE_BUFFER_LOCK_FILE);
-        lockFile.unlockSync(settings.DIFFS_SEND_LOCK_FILE);
-        fs.rmSync(baseRepoPath, { recursive: true, force: true });
-    });
-
-    test("Acquried no lock", async () => {
-        CodeSyncState.set(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED, false);
-        CodeSyncState.set(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED, false);
-        await extension.deactivate();
-        expect(console.log).toHaveBeenCalledTimes(0);
-        expect(lockFile.checkSync(settings.POPULATE_BUFFER_LOCK_FILE)).toBe(true);
-        expect(lockFile.checkSync(settings.DIFFS_SEND_LOCK_FILE)).toBe(true);
-    });
-
-    test("Acquried populateBuffer lock", () => {
-        CodeSyncState.set(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED, true);
-        CodeSyncState.set(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED, false);
-        extension.deactivate();
-        expect(console.log).toHaveBeenCalledTimes(0);
-        expect(lockFile.checkSync(settings.POPULATE_BUFFER_LOCK_FILE)).toBe(false);
-        expect(lockFile.checkSync(settings.DIFFS_SEND_LOCK_FILE)).toBe(true);
-    });
-
-    test("Acquried diffsSend locks", () => {
-        CodeSyncState.set(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED, false);
-        CodeSyncState.set(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED, true);
-        extension.deactivate();
-        expect(console.log).toHaveBeenCalledTimes(0);
-        expect(lockFile.checkSync(settings.POPULATE_BUFFER_LOCK_FILE)).toBe(true);
-        expect(lockFile.checkSync(settings.DIFFS_SEND_LOCK_FILE)).toBe(false);
-    });
-
-    test("Acquried both lock", () => {
-        CodeSyncState.set(CODESYNC_STATES.POPULATE_BUFFER_LOCK_ACQUIRED, true);
-        CodeSyncState.set(CODESYNC_STATES.DIFFS_SEND_LOCK_ACQUIRED, true);
-        extension.deactivate();
-        expect(console.log).toHaveBeenCalledTimes(0);
-        expect(lockFile.checkSync(settings.POPULATE_BUFFER_LOCK_FILE)).toBe(false);
-        expect(lockFile.checkSync(settings.DIFFS_SEND_LOCK_FILE)).toBe(false);
     });
 });
